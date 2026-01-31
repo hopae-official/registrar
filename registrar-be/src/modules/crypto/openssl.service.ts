@@ -102,7 +102,7 @@ export class OpenSSLService implements OnModuleInit {
     return this.cachedPrivateKey;
   }
 
-  async generateKeysAndCert(subject = '/C=DE/CN=Registrar'): Promise<void> {
+  async generateKeysAndCert(subject = '/C=LU/CN=Registrar'): Promise<void> {
     return this.mutex.runExclusive(async () => {
       if (existsSync(this.privateKeyPath) && existsSync(this.certPath)) {
         this.logger.debug('CA keys already exist, skipping generation');
@@ -256,7 +256,7 @@ oid_section = custom_oids
 organizationIdentifier = 2.5.4.97
 
 [ req_distinguished_name ]
-countryName = 'DE'
+countryName = 'LU'
 organizationName = ${rpName}
 organizationIdentifier = ${orgIdentifier}
 commonName = ${rpName}

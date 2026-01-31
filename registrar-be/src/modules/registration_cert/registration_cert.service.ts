@@ -40,7 +40,7 @@ export class RegistrationCertService {
       iat: Math.floor(Date.now() / 1000),
       name: rp.tradeName ?? rp.legalName ?? '',
       legal_name: rp.legalName ?? '',
-      country: 'DE',
+      country: 'LU',
       registry_uri: host + rp.registryURI,
       srvDescription: rp.srvDescription,
       entitlements: rp.entitlement,
