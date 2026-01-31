@@ -8,58 +8,105 @@
 }
 
 :root {
-  --color-bg: #f8f9fa;
+  --color-bg: #f0f4f8;
   --color-surface: #ffffff;
-  --color-border: #e1e5ea;
-  --color-text: #1a1a2e;
-  --color-text-secondary: #6b7280;
-  --color-primary: #3b5bdb;
-  --color-primary-hover: #2b4bc8;
-  --color-danger: #e03131;
-  --color-danger-hover: #c92a2a;
+  --color-border: #d0d8e0;
+  --color-text: #1a1f36;
+  --color-text-secondary: #5a6578;
+  --color-primary: #00458b;
+  --color-primary-hover: #003570;
+  --color-primary-light: #e8f0fa;
+  --color-danger: #c41e3a;
+  --color-danger-hover: #a81830;
   --color-success: #2f9e44;
-  --color-blue: #3b5bdb;
+  --color-blue: #00458b;
   --color-green: #2f9e44;
   --color-purple: #7950f2;
-  --color-red: #e03131;
-  --radius: 8px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --color-red: #c41e3a;
+  --color-lux-red: #ef4135;
+  --color-lux-blue: #00a3e0;
+  --radius: 6px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --max-width: 1100px;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
   min-height: 100vh;
 }
 
+/* Luxembourg flag accent stripe */
+.lux-stripe {
+  height: 4px;
+  background: linear-gradient(to right, var(--color-lux-red) 33.33%, #ffffff 33.33%, #ffffff 66.66%, var(--color-lux-blue) 66.66%);
+}
+
 /* Header */
-.header {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+.header-wrap {
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+.header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .header-inner {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 24px;
-  height: 60px;
+  height: 64px;
   display: flex;
   align-items: center;
   gap: 32px;
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
   text-decoration: none;
+}
+
+.logo-shield {
+  width: 36px;
+  height: 36px;
+  background: var(--color-primary);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.logo-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary);
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
 .header-nav {
@@ -191,7 +238,7 @@ body {
 /* RP Grid */
 .rp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
@@ -241,7 +288,7 @@ body {
 }
 
 .tag-blue {
-  background: #e7f0ff;
+  background: #e0edf8;
   color: var(--color-blue);
 }
 
@@ -314,7 +361,7 @@ body {
 /* Preset cards */
 .preset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 
@@ -327,7 +374,7 @@ body {
 
 .preset-card.preset-active {
   border-color: var(--color-primary);
-  background: #f8faff;
+  background: var(--color-primary-light);
 }
 
 .preset-card h3 {
@@ -664,7 +711,7 @@ body {
 
 .quick-login-btn:hover {
   border-color: var(--color-primary);
-  background: #f0f4ff;
+  background: var(--color-primary-light);
 }
 
 .quick-login-btn .ql-name {
@@ -821,4 +868,158 @@ body {
   grid-column: 1 / -1;
   border-top: 1px solid var(--color-border);
   padding-top: 12px;
+}
+
+/* Hero banner */
+.hero {
+  background: var(--color-primary);
+  color: white;
+  padding: 40px 0;
+  margin: -32px -24px 32px -24px;
+  position: relative;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(to right, var(--color-lux-red) 33.33%, #ffffff 33.33%, #ffffff 66.66%, var(--color-lux-blue) 66.66%);
+}
+
+.hero-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.hero h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.hero p {
+  font-size: 15px;
+  opacity: 0.9;
+  max-width: 600px;
+}
+
+.hero .hero-tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* Footer */
+.footer {
+  background: #1a2744;
+  color: #b0bec5;
+  margin-top: auto;
+  border-top: 3px solid var(--color-primary);
+}
+
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-brand-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: white;
+}
+
+.footer-brand p {
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 340px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 40px;
+}
+
+.footer-col h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #8a9ab5;
+  margin-bottom: 10px;
+}
+
+.footer-col a {
+  display: block;
+  font-size: 13px;
+  color: #b0bec5;
+  text-decoration: none;
+  padding: 2px 0;
+  transition: color 0.15s;
+}
+
+.footer-col a:hover {
+  color: white;
+}
+
+.footer-bottom {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 16px 24px;
+  border-top: 1px solid #2a3a5c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.footer-bottom .lux-flag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-bottom .lux-flag-bars {
+  display: flex;
+  gap: 2px;
+}
+
+.footer-bottom .lux-flag-bar {
+  width: 12px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+/* App layout for footer push */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-layout > .main {
+  flex: 1;
 }

@@ -6,38 +6,44 @@ export default function Header() {
   const navigate = useNavigate();
 
   return (
-    <header className="header">
-      <div className="header-inner">
-        <Link to="/" className="logo">
-          EU Wallet Registrar
-        </Link>
-        <nav className="header-nav">
-          <Link to="/">Registry</Link>
-          {token && <Link to="/dashboard">Dashboard</Link>}
-        </nav>
-        <div className="header-auth">
-          {token ? (
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                logout();
-                navigate('/');
-              }}
-            >
-              Sign Out
-            </button>
-          ) : (
-            <>
-              <Link to="/sign-in" className="btn btn-secondary">
-                Sign In
-              </Link>
-              <Link to="/sign-up" className="btn btn-primary">
-                Sign Up
-              </Link>
-            </>
-          )}
+    <div className="header-wrap">
+      <div className="lux-stripe" />
+      <header className="header">
+        <div className="header-inner">
+          <Link to="/" className="logo">
+            <div className="logo-shield">LU</div>
+            <div className="logo-text">
+              <span className="logo-title">Wallet RP Registrar</span>
+            </div>
+          </Link>
+          <nav className="header-nav">
+            <Link to="/">Registry</Link>
+            {token && <Link to="/dashboard">Dashboard</Link>}
+          </nav>
+          <div className="header-auth">
+            {token ? (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  logout();
+                  navigate('/');
+                }}
+              >
+                Sign Out
+              </button>
+            ) : (
+              <>
+                <Link to="/sign-in" className="btn btn-secondary">
+                  Sign In
+                </Link>
+                <Link to="/sign-up" className="btn btn-primary">
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 }

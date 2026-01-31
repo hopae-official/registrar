@@ -34,9 +34,19 @@ export default function Home() {
 
   return (
     <div className="page">
-      <h1>Wallet Relying Party Registry</h1>
+      <div className="hero">
+        <div className="hero-inner">
+          <span className="hero-tag">EU Digital Identity Wallet</span>
+          <h1>Wallet Relying Party Registry</h1>
+          <p>
+            Official registry of Wallet-Relying Parties authorized under the
+            EUDI framework.
+          </p>
+        </div>
+      </div>
+
       <p className="subtitle">
-        Public registry of registered Wallet-Relying Parties ({total} total)
+        {total} registered {total === 1 ? 'party' : 'parties'}
       </p>
 
       <form onSubmit={handleSearch} className="search-bar">
