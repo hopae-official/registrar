@@ -89,7 +89,10 @@ export default function RPDetail() {
     setRegPurposeLang(registrationCertPreset.purpose[0].lang);
     setRegPurposeContent(registrationCertPreset.purpose[0].content);
     setRegCredentials(JSON.stringify(registrationCertPreset.credentials, null, 2));
-    setRegIntermediary('');
+    // Pre-fill intermediary ID from RP's usesIntermediary reference
+    const interRef = rp?.usesIntermediary?.[0];
+    const interId = interRef?.registryURI?.replace(/^\/wrp\//, '') ?? '';
+    setRegIntermediary(interId);
   };
 
   const handleCreateAccessCert = async (e: React.FormEvent) => {
@@ -318,7 +321,7 @@ export default function RPDetail() {
                 <input
                   value={accessDns}
                   onChange={(e) => setAccessDns(e.target.value)}
-                  placeholder="wallet.example.lu, api.example.lu"
+                  placeholder="verify.hopae.com, api.example.lu"
                 />
               </div>
               <div className="form-group form-full">

@@ -5,39 +5,39 @@ export const demoUsers = [
   {
     label: 'Hopae Admin',
     description: 'Intermediary operator',
-    email: 'hopae@example.lu',
+    email: 'admin@hopae.com',
     password: 'demo1234',
     name: 'Alice Kim',
-    company: 'Hopae',
+    company: 'Hopae S.àr.l.',
   },
   {
     label: 'SmartID Admin',
     description: 'RP using intermediary',
-    email: 'smartid@example.lu',
+    email: 'admin@smartid.com',
     password: 'demo1234',
     name: 'Bob Martin',
-    company: 'SmartID Services',
+    company: 'SmartID Services S.àr.l.',
   },
   {
     label: 'LuxBank Admin',
     description: 'Normal RP operator',
-    email: 'luxbank@example.lu',
+    email: 'admin@luxbank.com',
     password: 'demo1234',
     name: 'Claire Dupont',
-    company: 'LuxBank',
+    company: 'LuxBank S.A.',
   },
 ];
 
 // --- RP Presets ---
 
 export const intermediaryPreset = {
-  legalName: 'Hopae Inc.',
+  legalName: 'Hopae S.àr.l.',
   tradeName: 'Hopae',
   identifier: [{ type: 'EUID', value: 'LULUX.12345678' }],
-  infoURI: ['https://hopae.io'],
-  email: 'contact@hopae.io',
+  infoURI: ['https://hopae.com'],
+  email: 'contact@hopae.com',
   phone: '+352-26-10-00-01',
-  supportURI: ['https://support.hopae.io'],
+  supportURI: ['https://support.hopae.com'],
   srvDescription: [
     {
       lang: 'en',
@@ -54,7 +54,7 @@ export const intermediaryPreset = {
             'Identity verification and credential processing on behalf of relying parties',
         },
       ],
-      privacyPolicy: [{ type: 'text/html', uri: 'https://hopae.io/privacy' }],
+      privacyPolicy: [{ type: 'text/html', uri: 'https://hopae.com/privacy' }],
       credential: [
         {
           format: 'vc+sd-jwt',
@@ -99,9 +99,7 @@ export const normalRPPreset = {
             'Customer onboarding and KYC verification for banking services',
         },
       ],
-      privacyPolicy: [
-        { type: 'text/html', uri: 'https://luxbank.lu/privacy' },
-      ],
+      privacyPolicy: [{ type: 'text/html', uri: 'https://luxbank.lu/privacy' }],
       credential: [
         {
           format: 'vc+sd-jwt',
@@ -152,8 +150,7 @@ export function rpWithIntermediaryPreset(intermediary: {
         purpose: [
           {
             lang: 'en',
-            content:
-              'Age verification and identity checks for online services',
+            content: 'Age verification and identity checks for online services',
           },
         ],
         privacyPolicy: [
@@ -205,5 +202,5 @@ export const registrationCertPreset = {
 };
 
 export const accessCertPreset = {
-  dns: ['wallet.example.lu', 'api.example.lu'],
+  dns: ['verify.hopae.com', 'api.example.lu'],
 };

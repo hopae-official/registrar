@@ -194,9 +194,6 @@ export default function Dashboard() {
         <div className="preset-grid">
           <div className={`preset-card ${showForm === 'normal' ? 'preset-active' : ''}`}>
             <h3>Normal RP</h3>
-            <p className="preset-desc">
-              Register <strong>{normalRPPreset.tradeName}</strong> ({normalRPPreset.legalName}) as a standard relying party for banking services.
-            </p>
             <div className="preset-details">
               <span>Entitlement: Service Provider</span>
               <span>Intermediary: No</span>
@@ -212,9 +209,6 @@ export default function Dashboard() {
 
           <div className={`preset-card ${showForm === 'intermediary' ? 'preset-active' : ''}`}>
             <h3>Intermediary</h3>
-            <p className="preset-desc">
-              Register <strong>{intermediaryPreset.tradeName}</strong> ({intermediaryPreset.legalName}) as a technology intermediary.
-            </p>
             <div className="preset-details">
               <span>Entitlement: Service Provider</span>
               <span>Intermediary: Yes</span>
@@ -230,18 +224,14 @@ export default function Dashboard() {
 
           <div className={`preset-card ${showForm === 'withIntermediary' ? 'preset-active' : ''}`}>
             <h3>RP with Intermediary</h3>
-            <p className="preset-desc">
-              Register <strong>SmartID</strong> (SmartID Services S.àr.l.) as an RP that uses a registered intermediary.
-            </p>
             {globalIntermediaries.length === 0 ? (
               <p className="preset-hint">
                 Register an intermediary first to enable this option.
               </p>
             ) : (
               <div className="preset-details">
-                <span>
-                  Using: {globalIntermediaries[0].tradeName || globalIntermediaries[0].legalName}
-                </span>
+                <span>Entitlement: Service Provider</span>
+                <span>With Intermediary</span>
               </div>
             )}
             <button
