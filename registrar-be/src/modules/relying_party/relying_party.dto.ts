@@ -1,32 +1,69 @@
-// TS5/TS6 Auxiliary Types
+import { ApiProperty } from '@nestjs/swagger';
 
-export interface MultiLangString {
+// TS5/TS6 Auxiliary Schema Classes
+
+export class MultiLangString {
   lang: string;
   content: string;
 }
 
-export interface Claim {
+export class Claim {
   path: (string | null | number)[];
   values?: (string | number | boolean)[];
 }
 
-export interface Credential {
+export class Credential {
   format: string;
   meta: string;
   claim?: Claim[];
 }
 
-export interface Policy {
+export class Policy {
   type: string;
   uri: string;
 }
 
-export interface Identifier {
+export class Identifier {
   type: string;
   value: string;
 }
 
-export interface IntendedUse {
+export class SupervisoryAuthority {
+  legalName: string;
+  identifier?: Identifier[];
+  email?: string;
+  phone?: string;
+  infoURI?: string[];
+}
+
+export class IntermediaryRef {
+  identifier: Identifier[];
+  tradeName?: string;
+  registryURI: string;
+}
+
+export class AccessCertificateEntry {
+  certificate: string;
+  issuedAt: string;
+  revokedAt?: string;
+}
+
+export class RegistrationCertificateEntry {
+  certificate: string;
+  intendedUseIdentifier: string;
+  issuedAt: string;
+  revokedAt?: string;
+}
+
+// Intended use input DTO (intendedUseIdentifier & createdAt are Registrar-provided)
+export class CreateIntendedUseDto {
+  purpose: MultiLangString[];
+  privacyPolicy: Policy[];
+  credential: Credential[];
+}
+
+// Full IntendedUse (as stored / returned)
+export class IntendedUse {
   purpose: MultiLangString[];
   privacyPolicy: Policy[];
   intendedUseIdentifier: string;
@@ -35,36 +72,8 @@ export interface IntendedUse {
   credential: Credential[];
 }
 
-export interface SupervisoryAuthority {
-  legalName: string;
-  identifier?: Identifier[];
-  email?: string;
-  phone?: string;
-  infoURI?: string[];
-}
-
-export interface IntermediaryRef {
-  identifier: Identifier[];
-  tradeName?: string;
-  registryURI: string;
-}
-
-export interface AccessCertificateEntry {
-  certificate: string;
-  issuedAt: string;
-  revokedAt?: string;
-}
-
-export interface RegistrationCertificateEntry {
-  certificate: string;
-  intendedUseIdentifier: string;
-  issuedAt: string;
-  revokedAt?: string;
-}
-
 // Main WalletRelyingParty stored in-memory (single object with all info)
 export interface WalletRelyingParty {
-  // Internal fields
   id: string;
   ownerId: string;
 
@@ -110,7 +119,7 @@ export class CreateRelyingPartyDto {
   tradeName?: string;
   supportURI: string[];
   srvDescription: MultiLangString[];
-  intendedUse?: Omit<IntendedUse, 'intendedUseIdentifier' | 'createdAt'>[];
+  intendedUse?: CreateIntendedUseDto[];
   isPSB: boolean;
   entitlement: string[];
   providesAttestations?: Credential[];
@@ -131,7 +140,7 @@ export class UpdateRelyingPartyDto {
   tradeName?: string;
   supportURI?: string[];
   srvDescription?: MultiLangString[];
-  intendedUse?: Omit<IntendedUse, 'intendedUseIdentifier' | 'createdAt'>[];
+  intendedUse?: CreateIntendedUseDto[];
   isPSB?: boolean;
   entitlement?: string[];
   providesAttestations?: Credential[];
@@ -154,6 +163,7 @@ export class SearchRelyingPartyQueryDto {
   intendedUseCredentialMeta?: string;
   intendedUseCredentialFormat?: string;
   cursor?: string;
+  @ApiProperty({ description: 'Page size (default 20)', required: false })
   limit?: string;
 }
 
@@ -164,6 +174,15 @@ export class CheckIntendedUseQueryDto {
   credentialMeta?: string;
   claimPath?: string;
   purpose?: string;
+}
+
+export class AddAccessCertDto {
+  certificate: string;
+}
+
+export class AddRegistrationCertDto {
+  certificate: string;
+  intendedUseIdentifier: string;
 }
 
 // Entitlement URIs (ETSI TS 119 475)
@@ -181,7 +200,8 @@ export const ENTITLEMENT_URIS = {
     'https://uri.etsi.org/19475/Entitlement/QCert_for_ESig_Provider',
   RQSEALCDS_PROVIDER:
     'https://uri.etsi.org/19475/Entitlement/rQSealCDs_Provider',
-  RQSIGCDS_PROVIDER: 'https://uri.etsi.org/19475/Entitlement/rQSigCDs_Provider',
+  RQSIGCDS_PROVIDER:
+    'https://uri.etsi.org/19475/Entitlement/rQSigCDs_Provider',
   ESIG_ESEAL_CREATION_PROVIDER:
     'https://uri.etsi.org/19475/Entitlement/ESig_ESeal_Creation_Provider',
 } as const;
