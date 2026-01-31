@@ -24,6 +24,14 @@ export class RelyingPartyService {
     return publicData;
   }
 
+  getById(id: string): WalletRelyingParty | undefined {
+    return this.relyingParties.find((rp) => rp.id === id);
+  }
+
+  getUniqueIdentifier(rp: WalletRelyingParty): string {
+    return rp.id;
+  }
+
   findAll(query: SearchRelyingPartyQueryDto) {
     let results = [...this.relyingParties];
 
@@ -291,7 +299,6 @@ export class RelyingPartyService {
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
-
     const certEntry: AccessCertificateEntry = {
       ...entry,
       issuedAt: new Date().toISOString(),
@@ -308,21 +315,31 @@ export class RelyingPartyService {
     return rp.accessCertificates;
   }
 
+  findAccessCertificate(
+    rpId: string,
+    certId: string,
+  ): AccessCertificateEntry | undefined {
+    const rp = this.relyingParties.find((r) => r.id === rpId);
+    if (!rp) {
+      throw new NotFoundException(`Relying party with id ${rpId} not found`);
+    }
+    return rp.accessCertificates.find((c) => c.id === certId);
+  }
+
   revokeAccessCertificate(
     rpId: string,
-    certIndex: number,
+    certId: string,
   ): AccessCertificateEntry {
     const rp = this.relyingParties.find((r) => r.id === rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
-    if (certIndex < 0 || certIndex >= rp.accessCertificates.length) {
-      throw new NotFoundException(
-        `Certificate at index ${certIndex} not found`,
-      );
+    const cert = rp.accessCertificates.find((c) => c.id === certId);
+    if (!cert) {
+      throw new NotFoundException(`Access certificate ${certId} not found`);
     }
-    rp.accessCertificates[certIndex].revokedAt = new Date().toISOString();
-    return rp.accessCertificates[certIndex];
+    cert.revokedAt = new Date().toISOString();
+    return cert;
   }
 
   addRegistrationCertificate(
@@ -333,7 +350,6 @@ export class RelyingPartyService {
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
-
     const certEntry: RegistrationCertificateEntry = {
       ...entry,
       issuedAt: new Date().toISOString(),
@@ -352,18 +368,19 @@ export class RelyingPartyService {
 
   revokeRegistrationCertificate(
     rpId: string,
-    certIndex: number,
+    certId: string,
   ): RegistrationCertificateEntry {
     const rp = this.relyingParties.find((r) => r.id === rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
-    if (certIndex < 0 || certIndex >= rp.registrationCertificates.length) {
+    const cert = rp.registrationCertificates.find((c) => c.id === certId);
+    if (!cert) {
       throw new NotFoundException(
-        `Certificate at index ${certIndex} not found`,
+        `Registration certificate ${certId} not found`,
       );
     }
-    rp.registrationCertificates[certIndex].revokedAt = new Date().toISOString();
-    return rp.registrationCertificates[certIndex];
+    cert.revokedAt = new Date().toISOString();
+    return cert;
   }
 }

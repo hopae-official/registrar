@@ -1,0 +1,42 @@
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir             = /home/lukasjhan/registrar/registrar-be/.certs
+certs           = $dir/certs
+crl_dir         = $dir/crl
+database        = /home/lukasjhan/registrar/registrar-be/.certs/index.txt
+new_certs_dir   = $dir/newcerts
+certificate     = /home/lukasjhan/registrar/registrar-be/.certs/ca.crt
+crlnumber       = /home/lukasjhan/registrar/registrar-be/.certs/crlnumber
+private_key     = /home/lukasjhan/registrar/registrar-be/.certs/ca.key
+RANDFILE        = $dir/private/.rand
+default_crl_days = 30
+default_md       = sha256
+policy           = policy_match
+crl             = /home/lukasjhan/registrar/registrar-be/.certs/crl.pem
+random_serial   = yes
+unique_subject  = no
+
+[ crl_ext ]
+authorityKeyIdentifier=keyid:always
+
+[ req ]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_ca
+
+[ req_distinguished_name ]
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, keyCertSign, cRLSign
+issuerAltName = @issuer_alt_name
+crlDistributionPoints = URI:http://localhost:18000/status-management/crl
+
+[ issuer_alt_name ]
+URI.1 = http://localhost:18000
+
+[ alt_names ]
+DNS.1 = localhost:18000

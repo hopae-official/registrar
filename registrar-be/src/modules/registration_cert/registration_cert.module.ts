@@ -3,9 +3,10 @@ import { RegistrationCertController } from './registration_cert.controller';
 import { RegistrationCertService } from './registration_cert.service';
 import { RelyingPartyModule } from '../relying_party/relying_party.module';
 import { AuthModule } from '../auth/auth.module';
+import { CryptoModule } from '../crypto/crypto.module';
 
 @Module({
-  imports: [RelyingPartyModule, AuthModule],
+  imports: [RelyingPartyModule, AuthModule, CryptoModule],
   controllers: [RegistrationCertController],
   providers: [RegistrationCertService],
   exports: [RegistrationCertService],

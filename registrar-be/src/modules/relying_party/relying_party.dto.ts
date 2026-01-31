@@ -14,7 +14,7 @@ export class Claim {
 
 export class Credential {
   format: string;
-  meta: string;
+  meta: any;
   claim?: Claim[];
 }
 
@@ -42,15 +42,20 @@ export class IntermediaryRef {
   registryURI: string;
 }
 
+// Certificate entry types stored in the RP object
+
 export class AccessCertificateEntry {
-  certificate: string;
+  id: string; // serial number
+  certificate: string; // PEM-encoded X.509 certificate
+  dns?: string[];
   issuedAt: string;
   revokedAt?: string;
 }
 
 export class RegistrationCertificateEntry {
-  certificate: string;
-  intendedUseIdentifier: string;
+  id: string; // jti UUID
+  jwt: string; // signed JWT
+  intendedUse: { purpose: MultiLangString[] };
   issuedAt: string;
   revokedAt?: string;
 }
@@ -105,7 +110,7 @@ export interface WalletRelyingParty {
   registrationCertificates: RegistrationCertificateEntry[];
 }
 
-// DTOs
+// --- DTOs ---
 
 export class CreateRelyingPartyDto {
   legalName?: string;
@@ -176,13 +181,30 @@ export class CheckIntendedUseQueryDto {
   purpose?: string;
 }
 
-export class AddAccessCertDto {
-  certificate: string;
+// --- Certificate creation DTOs ---
+
+export class AccessCertificateRegistrationDto {
+  rpId: string;
+  @ApiProperty({
+    description: 'PEM-encoded EC P-256 public key',
+  })
+  publicKey: string;
+  @ApiProperty({
+    description: 'Subject Alternative Name DNS entries',
+    required: false,
+  })
+  dns?: string[];
 }
 
-export class AddRegistrationCertDto {
-  certificate: string;
-  intendedUseIdentifier: string;
+export class RegistrationCertificateCreationDto {
+  rpId: string;
+  support_uri: string;
+  @ApiProperty({ example: 'https://example.com/privacy-policy' })
+  privacy_policy: string;
+  purpose?: MultiLangString[];
+  credentials?: Credential[];
+  provided_attestations?: Credential[];
+  intermediary?: string;
 }
 
 // Entitlement URIs (ETSI TS 119 475)

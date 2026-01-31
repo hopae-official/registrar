@@ -2,11 +2,10 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Delete,
   Param,
   Body,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { AccessCertService } from './access_cert.service';
 import { JwtGuard } from '../auth/jwt.guard';
-import { AddAccessCertDto } from '../relying_party/relying_party.dto';
+import { AccessCertificateRegistrationDto } from '../relying_party/relying_party.dto';
 
 @ApiTags('Access Certificates')
 @Controller('wrp/:rpId/access-certs')
@@ -30,25 +29,33 @@ export class AccessCertController {
     return this.accessCertService.getAll(rpId);
   }
 
-  @UseGuards(JwtGuard)
-  @Post()
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Add an access certificate to a WRP' })
-  @ApiResponse({ status: 201, description: 'Certificate added' })
-  add(@Param('rpId') rpId: string, @Body() body: AddAccessCertDto) {
-    return this.accessCertService.add(rpId, body.certificate);
+  @Get(':certId')
+  @ApiOperation({ summary: 'Get a specific access certificate' })
+  @ApiResponse({ status: 200, description: 'Certificate data with PEM' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  findOne(@Param('rpId') rpId: string, @Param('certId') certId: string) {
+    return this.accessCertService.findOne(rpId, certId);
   }
 
   @UseGuards(JwtGuard)
-  @Put(':index/revoke')
+  @Post()
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Revoke an access certificate by index' })
+  @ApiOperation({
+    summary: 'Create an X.509 access certificate for a WRP',
+  })
+  @ApiResponse({ status: 201, description: 'Certificate created' })
+  @ApiResponse({ status: 400, description: 'Invalid public key' })
+  register(@Body() dto: AccessCertificateRegistrationDto) {
+    return this.accessCertService.register(dto);
+  }
+
+  @UseGuards(JwtGuard)
+  @Delete(':certId')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke an access certificate' })
   @ApiResponse({ status: 200, description: 'Certificate revoked' })
-  @ApiResponse({ status: 404, description: 'Certificate not found' })
-  revoke(
-    @Param('rpId') rpId: string,
-    @Param('index', ParseIntPipe) index: number,
-  ) {
-    return this.accessCertService.revoke(rpId, index);
+  @ApiResponse({ status: 404, description: 'Not found' })
+  revoke(@Param('rpId') rpId: string, @Param('certId') certId: string) {
+    return this.accessCertService.revoke(rpId, certId);
   }
 }
