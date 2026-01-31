@@ -1,7 +1,11 @@
-const BASE = '';
+const BASE =
+  import.meta.env.VITE_API_URL ?? 'https://registrar-api.dev.hopae.app';
 
 function authHeaders(token: string): HeadersInit {
-  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  return {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -23,7 +27,12 @@ export function signIn(email: string, password: string) {
   });
 }
 
-export function signUp(email: string, password: string, name: string, company: string) {
+export function signUp(
+  email: string,
+  password: string,
+  name: string,
+  company: string,
+) {
   return request<{ access_token: string }>('/auth/sign-up', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -34,7 +43,9 @@ export function signUp(email: string, password: string, name: string, company: s
 // WRP public
 export function listWRPs(params?: Record<string, string>) {
   const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-  return request<{ items: any[]; nextCursor?: string; total: number }>(`/wrp${qs}`);
+  return request<{ items: any[]; nextCursor?: string; total: number }>(
+    `/wrp${qs}`,
+  );
 }
 
 export function getWRP(id: string) {
@@ -66,7 +77,11 @@ export function listAccessCerts(rpId: string) {
   return request<any[]>(`/wrp/${rpId}/access-certs`);
 }
 
-export function createAccessCert(token: string, rpId: string, dto: { publicKey: string; dns?: string[] }) {
+export function createAccessCert(
+  token: string,
+  rpId: string,
+  dto: { publicKey: string; dns?: string[] },
+) {
   return request<{ id: string; crt: string }>(`/wrp/${rpId}/access-certs`, {
     method: 'POST',
     headers: authHeaders(token),
@@ -87,14 +102,21 @@ export function listRegistrationCerts(rpId: string) {
 }
 
 export function createRegistrationCert(token: string, rpId: string, dto: any) {
-  return request<{ id: string; jwt: string; intendedUse: any }>(`/wrp/${rpId}/registration-certs`, {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(dto),
-  });
+  return request<{ id: string; jwt: string; intendedUse: any }>(
+    `/wrp/${rpId}/registration-certs`,
+    {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(dto),
+    },
+  );
 }
 
-export function revokeRegistrationCert(token: string, rpId: string, certId: string) {
+export function revokeRegistrationCert(
+  token: string,
+  rpId: string,
+  certId: string,
+) {
   return request<any>(`/wrp/${rpId}/registration-certs/${certId}`, {
     method: 'DELETE',
     headers: authHeaders(token),
