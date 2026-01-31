@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -13,6 +13,199 @@ import {
   generateECP256KeyPair,
 } from '../api/client';
 import { registrationCertPreset, accessCertPreset } from '../presets/data';
+import { decodeX509, decodeJWT } from '../utils/certDecode';
+
+function formatDN(dn: Record<string, string>): string {
+  const order = ['CN', 'O', 'organizationIdentifier', 'OU', 'C'];
+  const parts: string[] = [];
+  for (const key of order) {
+    if (dn[key]) parts.push(`${key}=${dn[key]}`);
+  }
+  // Add any remaining keys not in the order list
+  for (const [key, val] of Object.entries(dn)) {
+    if (!order.includes(key)) parts.push(`${key}=${val}`);
+  }
+  return parts.join(', ');
+}
+
+function X509DecodedView({ pem }: { pem: string }) {
+  const decoded = useMemo(() => decodeX509(pem), [pem]);
+  if (!decoded) return <p className="decode-error">Unable to decode certificate</p>;
+  return (
+    <div className="decoded-grid">
+      <div className="decoded-row">
+        <span className="decoded-label">Subject</span>
+        <span className="decoded-value">{formatDN(decoded.subject)}</span>
+      </div>
+      <div className="decoded-row">
+        <span className="decoded-label">Issuer</span>
+        <span className="decoded-value">{formatDN(decoded.issuer)}</span>
+      </div>
+      <div className="decoded-row">
+        <span className="decoded-label">Serial Number</span>
+        <span className="decoded-value mono">{decoded.serialNumber}</span>
+      </div>
+      <div className="decoded-row">
+        <span className="decoded-label">Not Before</span>
+        <span className="decoded-value">{decoded.notBefore}</span>
+      </div>
+      <div className="decoded-row">
+        <span className="decoded-label">Not After</span>
+        <span className="decoded-value">{decoded.notAfter}</span>
+      </div>
+      <div className="decoded-row">
+        <span className="decoded-label">Signature Algorithm</span>
+        <span className="decoded-value">{decoded.signatureAlgorithm}</span>
+      </div>
+      <div className="decoded-row">
+        <span className="decoded-label">Public Key</span>
+        <span className="decoded-value">{decoded.publicKeyAlgorithm}</span>
+      </div>
+      {decoded.sanDns.length > 0 && (
+        <div className="decoded-row">
+          <span className="decoded-label">SAN (DNS)</span>
+          <span className="decoded-value">{decoded.sanDns.join(', ')}</span>
+        </div>
+      )}
+      {decoded.crlDistributionPoints.length > 0 && (
+        <div className="decoded-row">
+          <span className="decoded-label">CRL Distribution</span>
+          <span className="decoded-value mono">{decoded.crlDistributionPoints.join(', ')}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JWTDecodedView({ jwt }: { jwt: string }) {
+  const decoded = useMemo(() => decodeJWT(jwt), [jwt]);
+  if (!decoded) return <p className="decode-error">Unable to decode JWT</p>;
+
+  const { header, payload } = decoded;
+
+  // Pick out key display fields
+  const headerSummary = `alg=${header.alg}, typ=${header.typ}`;
+  const hasX5c = Array.isArray(header.x5c) && header.x5c.length > 0;
+
+  return (
+    <div className="decoded-grid">
+      <div className="decoded-row">
+        <span className="decoded-label">Header</span>
+        <span className="decoded-value mono">{headerSummary}{hasX5c ? `, x5c[${header.x5c.length}]` : ''}</span>
+      </div>
+      {payload.iss && (
+        <div className="decoded-row">
+          <span className="decoded-label">Issuer (iss)</span>
+          <span className="decoded-value">{payload.iss}</span>
+        </div>
+      )}
+      {payload.sub && (
+        <div className="decoded-row">
+          <span className="decoded-label">Subject (sub)</span>
+          <span className="decoded-value mono">{payload.sub}</span>
+        </div>
+      )}
+      {payload.jti && (
+        <div className="decoded-row">
+          <span className="decoded-label">JWT ID (jti)</span>
+          <span className="decoded-value mono">{payload.jti}</span>
+        </div>
+      )}
+      {payload.iat && (
+        <div className="decoded-row">
+          <span className="decoded-label">Issued At</span>
+          <span className="decoded-value">{new Date(payload.iat * 1000).toISOString()}</span>
+        </div>
+      )}
+      {payload.name && (
+        <div className="decoded-row">
+          <span className="decoded-label">Name</span>
+          <span className="decoded-value">{payload.name}</span>
+        </div>
+      )}
+      {payload.legal_name && (
+        <div className="decoded-row">
+          <span className="decoded-label">Legal Name</span>
+          <span className="decoded-value">{payload.legal_name}</span>
+        </div>
+      )}
+      {payload.country && (
+        <div className="decoded-row">
+          <span className="decoded-label">Country</span>
+          <span className="decoded-value">{payload.country}</span>
+        </div>
+      )}
+      {payload.registry_uri && (
+        <div className="decoded-row">
+          <span className="decoded-label">Registry URI</span>
+          <span className="decoded-value mono">{payload.registry_uri}</span>
+        </div>
+      )}
+      {payload.entitlements && (
+        <div className="decoded-row">
+          <span className="decoded-label">Entitlements</span>
+          <span className="decoded-value">
+            {(Array.isArray(payload.entitlements) ? payload.entitlements : [payload.entitlements])
+              .map((e: string) => e.split('/').pop())
+              .join(', ')}
+          </span>
+        </div>
+      )}
+      {payload.support_uri && (
+        <div className="decoded-row">
+          <span className="decoded-label">Support URI</span>
+          <span className="decoded-value">{payload.support_uri}</span>
+        </div>
+      )}
+      {payload.privacy_policy && (
+        <div className="decoded-row">
+          <span className="decoded-label">Privacy Policy</span>
+          <span className="decoded-value">{payload.privacy_policy}</span>
+        </div>
+      )}
+      {payload.isPSB !== undefined && (
+        <div className="decoded-row">
+          <span className="decoded-label">Is PSB</span>
+          <span className="decoded-value">{String(payload.isPSB)}</span>
+        </div>
+      )}
+      {payload.act && (
+        <div className="decoded-row">
+          <span className="decoded-label">Intermediary (act)</span>
+          <span className="decoded-value">{payload.act.name} ({payload.act.id})</span>
+        </div>
+      )}
+      {payload.dpa && (
+        <div className="decoded-row">
+          <span className="decoded-label">DPA</span>
+          <span className="decoded-value">
+            {[payload.dpa.uri, payload.dpa.email, payload.dpa.phone].filter(Boolean).join(' | ')}
+          </span>
+        </div>
+      )}
+      {payload.purpose && (
+        <div className="decoded-row">
+          <span className="decoded-label">Purpose</span>
+          <span className="decoded-value">
+            {Array.isArray(payload.purpose)
+              ? payload.purpose.map((p: any) => p.content || p).join('; ')
+              : String(payload.purpose)}
+          </span>
+        </div>
+      )}
+      {payload.srvDescription && (
+        <div className="decoded-row">
+          <span className="decoded-label">Service Description</span>
+          <span className="decoded-value">
+            {Array.isArray(payload.srvDescription)
+              ? payload.srvDescription.map((d: any) => d.content || d).join('; ')
+              : String(payload.srvDescription)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RPDetail() {
   const { id } = useParams<{ id: string }>();
@@ -390,7 +583,7 @@ export default function RPDetail() {
                         setExpandedCert(expandedCert === cert.id ? null : cert.id)
                       }
                     >
-                      {expandedCert === cert.id ? 'Hide' : 'Show'} PEM
+                      {expandedCert === cert.id ? 'Hide' : 'Show'} Raw PEM
                     </button>
                     {token && !cert.revokedAt && (
                       <button
@@ -408,6 +601,8 @@ export default function RPDetail() {
                     <span>DNS: {cert.dns.join(', ')}</span>
                   )}
                 </div>
+                {/* Decoded X.509 info */}
+                {cert.certificate && <X509DecodedView pem={cert.certificate} />}
                 {expandedCert === cert.id && (
                   <pre className="cert-pem">{cert.certificate}</pre>
                 )}
@@ -535,7 +730,7 @@ export default function RPDetail() {
                         )
                       }
                     >
-                      {expandedCert === `reg-${cert.id}` ? 'Hide' : 'Show'} JWT
+                      {expandedCert === `reg-${cert.id}` ? 'Hide' : 'Show'} Raw JWT
                     </button>
                     {token && !cert.revokedAt && (
                       <button
@@ -550,6 +745,8 @@ export default function RPDetail() {
                 <div className="cert-meta">
                   <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
                 </div>
+                {/* Decoded JWT info */}
+                {cert.jwt && <JWTDecodedView jwt={cert.jwt} />}
                 {expandedCert === `reg-${cert.id}` && (
                   <pre className="cert-pem">{cert.jwt}</pre>
                 )}
