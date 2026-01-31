@@ -4,6 +4,13 @@ import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 
+export type AuthPayload = {
+  email: string;
+  sub: string; // user id
+  company: string;
+  name: string;
+};
+
 @Injectable()
 export class AuthService {
   private readonly secret: string;
@@ -20,7 +27,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Sign in failed');
     }
-    const payload = {
+    const payload: AuthPayload = {
       email: user.email,
       sub: user.id,
       company: user.company,
@@ -33,7 +40,7 @@ export class AuthService {
 
   signUp(signUpDto: SignUpDto) {
     const user = this.userService.createUser(signUpDto);
-    const payload = {
+    const payload: AuthPayload = {
       email: user.email,
       sub: user.id,
       company: user.company,
