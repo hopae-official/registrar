@@ -1,14 +1,23 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { OpenSSLService } from './openssl.service';
 import { JWTHeaderParameters, JWTPayload, SignJWT } from 'jose';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CryptoService implements OnModuleInit {
   x5c: string[];
-  issuer = 'Registrar';
+  issuer: string;
   private initialized = false;
 
-  constructor(public openssl: OpenSSLService) {}
+  constructor(
+    public openssl: OpenSSLService,
+    private readonly configService: ConfigService,
+  ) {
+    this.issuer = this.configService.get<string>(
+      'API_BASE_URL',
+      'https://registrar-api.dev.hopae.app',
+    );
+  }
 
   async onModuleInit(): Promise<void> {
     await this.initialize();
@@ -43,7 +52,13 @@ export class CryptoService implements OnModuleInit {
     header?: Omit<JWTHeaderParameters, 'alg'>,
   ): Promise<string> {
     const jwt = new SignJWT(payload);
-    jwt.setProtectedHeader({ ...header, x5c: this.x5c, alg: 'ES256' });
+    jwt.setProtectedHeader({
+      ...header,
+      x5c: this.x5c,
+      alg: 'ES256',
+      iss: this.issuer,
+      iat: Math.floor(Date.now() / 1000),
+    });
     return jwt.sign(this.openssl.privateKey());
   }
 

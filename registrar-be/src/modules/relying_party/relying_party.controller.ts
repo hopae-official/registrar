@@ -8,6 +8,7 @@ import {
   Param,
   Body,
   Query,
+  Res,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -16,8 +17,11 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiProduces,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { RelyingPartyService } from './relying_party.service';
+import { CryptoService } from '../crypto/crypto.service';
 import { JwtGuard } from '../auth/jwt.guard';
 import { AuthenticatedUser } from '../user/user.deco';
 import {
@@ -31,23 +35,48 @@ import { AuthPayload } from '../auth/auth.service';
 @ApiTags('Wallet Relying Party')
 @Controller('wrp')
 export class RelyingPartyController {
-  constructor(private readonly relyingPartyService: RelyingPartyService) {}
+  constructor(
+    private readonly relyingPartyService: RelyingPartyService,
+    private readonly cryptoService: CryptoService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Search/list registered Wallet-Relying Parties' })
-  @ApiResponse({ status: 200, description: 'Paginated list of matching WRPs' })
-  findAll(@Query() query: SearchRelyingPartyQueryDto) {
-    return this.relyingPartyService.findAll(query);
+  @ApiProduces('application/jwt')
+  @ApiResponse({
+    status: 200,
+    description: 'JWS-signed paginated list of matching WRPs',
+  })
+  async findAll(
+    @Query() query: SearchRelyingPartyQueryDto,
+    @Res() res: Response,
+  ) {
+    const data = this.relyingPartyService.findAll(query);
+    const jws = await this.cryptoService.signJWT(data, {
+      typ: 'wrp-registry+jwt',
+    });
+    res.type('application/jwt').send(jws);
   }
 
   @Get('check-intended-use')
   @ApiOperation({ summary: 'Check intended use for a Wallet-Relying Party' })
+  @ApiProduces('application/jwt')
   @ApiResponse({
     status: 200,
-    description: 'Boolean result of intended use check',
+    description: 'JWS-signed boolean result of intended use check',
   })
-  checkIntendedUse(@Query() query: CheckIntendedUseQueryDto) {
-    return { result: this.relyingPartyService.checkIntendedUse(query) };
+  async checkIntendedUse(
+    @Query() query: CheckIntendedUseQueryDto,
+    @Res() res: Response,
+  ) {
+    const result = this.relyingPartyService.checkIntendedUse(query);
+    const jws = await this.cryptoService.signJWT(
+      { ...result },
+      {
+        typ: 'wrp-registry+jwt',
+      },
+    );
+    res.type('application/jwt').send(jws);
   }
 
   @UseGuards(JwtGuard)
@@ -61,10 +90,15 @@ export class RelyingPartyController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single WRP by identifier' })
-  @ApiResponse({ status: 200, description: 'WRP data' })
+  @ApiProduces('application/jwt')
+  @ApiResponse({ status: 200, description: 'JWS-signed WRP data' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  findOne(@Param('id') id: string) {
-    return this.relyingPartyService.findOne(id);
+  async findOne(@Param('id') id: string, @Res() res: Response) {
+    const data = this.relyingPartyService.findOne(id);
+    const jws = await this.cryptoService.signJWT(data, {
+      typ: 'wrp-registry+jwt',
+    });
+    res.type('application/jwt').send(jws);
   }
 
   @UseGuards(JwtGuard)

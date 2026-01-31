@@ -12,6 +12,7 @@ import {
   CheckIntendedUseQueryDto,
   AccessCertificateEntry,
   RegistrationCertificateEntry,
+  IntendedUse,
 } from './relying_party.dto';
 
 @Injectable()
@@ -174,41 +175,52 @@ export class RelyingPartyService {
       .map((rp) => this.toPublicResponse(rp));
   }
 
-  checkIntendedUse(query: CheckIntendedUseQueryDto): boolean {
+  checkIntendedUse(query: CheckIntendedUseQueryDto): IntendedUse {
     const rp = this.relyingParties.find((r) =>
       r.identifier.some((id) => id.value === query.identifier),
     );
-    if (!rp || !rp.intendedUse) return false;
+    if (!rp?.intendedUse) throw new NotFoundException('Not found');
 
-    return rp.intendedUse.some((iu) => {
+    const iu = rp.intendedUse.find((iu) => {
+      // intendedUseIdentifier 체크
       if (
         query.intendedUseIdentifier &&
         iu.intendedUseIdentifier !== query.intendedUseIdentifier
-      )
+      ) {
         return false;
-      if (query.purpose) {
-        if (
-          !iu.purpose.some((p) =>
-            p.content.toLowerCase().includes(query.purpose!.toLowerCase()),
-          )
-        )
-          return false;
       }
+
+      // purpose 체크
+      if (query.purpose) {
+        const hasPurpose = iu.purpose.some((p) =>
+          p.content.toLowerCase().includes(query.purpose!.toLowerCase()),
+        );
+        if (!hasPurpose) return false;
+      }
+
+      // credential 관련 체크
       if (query.credentialFormat || query.credentialMeta || query.claimPath) {
-        return iu.credential.some((c) => {
+        const hasCredential = iu.credential.some((c) => {
           if (query.credentialFormat && c.format !== query.credentialFormat)
             return false;
           if (query.credentialMeta && c.meta !== query.credentialMeta)
             return false;
-          if (query.claimPath) {
-            if (!c.claim?.some((cl) => cl.path.includes(query.claimPath!)))
-              return false;
+          if (
+            query.claimPath &&
+            !c.claim?.some((cl) => cl.path.includes(query.claimPath!))
+          ) {
+            return false;
           }
           return true;
         });
+        if (!hasCredential) return false;
       }
+
       return true;
     });
+
+    if (!iu) throw new NotFoundException('Not found');
+    return iu;
   }
 
   create(dto: CreateRelyingPartyDto, ownerId: string): WalletRelyingParty {

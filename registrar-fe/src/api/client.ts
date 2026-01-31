@@ -39,16 +39,39 @@ export function signUp(
   });
 }
 
-// WRP public
-export function listWRPs(params?: Record<string, string>) {
+// JWS helpers
+function base64UrlDecode(str: string): string {
+  const padded = str.replace(/-/g, '+').replace(/_/g, '/');
+  return atob(padded);
+}
+
+function decodeJWSPayload<T>(jws: string): T {
+  const parts = jws.split('.');
+  if (parts.length !== 3) throw new Error('Invalid JWS format');
+  return JSON.parse(base64UrlDecode(parts[1]));
+}
+
+// WRP public (JWS-signed responses with Content-Type: application/jwt)
+async function requestJWT(url: string): Promise<string> {
+  const res = await fetch(BASE + url);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? `Request failed: ${res.status}`);
+  }
+  return res.text();
+}
+
+export async function listWRPs(params?: Record<string, string>) {
   const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-  return request<{ items: any[]; nextCursor?: string; total: number }>(
-    `/wrp${qs}`,
+  const jws = await requestJWT(`/wrp${qs}`);
+  return decodeJWSPayload<{ items: any[]; nextCursor?: string; total: number }>(
+    jws,
   );
 }
 
-export function getWRP(id: string) {
-  return request<any>(`/wrp/${id}`);
+export async function getWRP(id: string) {
+  const jws = await requestJWT(`/wrp/${id}`);
+  return decodeJWSPayload<any>(jws);
 }
 
 // WRP authenticated
