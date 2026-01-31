@@ -134,12 +134,17 @@ body {
 
 /* Main */
 .main {
+  width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 32px 24px;
 }
 
 /* Page */
+.page {
+  width: 100%;
+}
+
 .page h1 {
   font-size: 28px;
   font-weight: 700;
