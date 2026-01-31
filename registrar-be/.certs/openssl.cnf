@@ -33,10 +33,10 @@ authorityKeyIdentifier = keyid:always
 basicConstraints = critical, CA:true, pathlen:0
 keyUsage = critical, keyCertSign, cRLSign
 issuerAltName = @issuer_alt_name
-crlDistributionPoints = URI:http://localhost:18000/status-management/crl
+crlDistributionPoints = URI:https://registrar-api.dev.hopae.app/status-management/crl
 
 [ issuer_alt_name ]
-URI.1 = http://localhost:18000
+URI.1 = https://registrar-api.dev.hopae.app
 
 [ alt_names ]
-DNS.1 = localhost:18000
+DNS.1 = registrar-api.dev.hopae.app
