@@ -1,5 +1,4 @@
-const BASE =
-  import.meta.env.VITE_API_URL ?? 'https://registrar-api.dev.hopae.app';
+const BASE = 'https://registrar-api.dev.hopae.app';
 
 function authHeaders(token: string): HeadersInit {
   return {
