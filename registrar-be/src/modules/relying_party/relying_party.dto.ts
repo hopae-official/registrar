@@ -200,8 +200,7 @@ export const ENTITLEMENT_URIS = {
     'https://uri.etsi.org/19475/Entitlement/QCert_for_ESig_Provider',
   RQSEALCDS_PROVIDER:
     'https://uri.etsi.org/19475/Entitlement/rQSealCDs_Provider',
-  RQSIGCDS_PROVIDER:
-    'https://uri.etsi.org/19475/Entitlement/rQSigCDs_Provider',
+  RQSIGCDS_PROVIDER: 'https://uri.etsi.org/19475/Entitlement/rQSigCDs_Provider',
   ESIG_ESEAL_CREATION_PROVIDER:
     'https://uri.etsi.org/19475/Entitlement/ESig_ESeal_Creation_Provider',
 } as const;
