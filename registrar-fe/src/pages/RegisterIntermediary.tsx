@@ -20,6 +20,7 @@ export default function RegisterIntermediary() {
   });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
 
   useEffect(() => {
@@ -250,68 +251,71 @@ export default function RegisterIntermediary() {
             />
           </div>
 
-          <div className="form-section-title">Options</div>
-          <div className="form-group">
-            <div className="form-check">
-              <input
-                type="checkbox"
-                id="isPSB"
-                checked={form.isPSB}
-                onChange={(e) => updateForm('isPSB', e.target.checked)}
-              />
-              <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
-            </div>
-          </div>
-          <div className="form-group" />
+          <div className="form-accordion">
+            <button
+              type="button"
+              className="form-accordion-toggle"
+              onClick={() => setAdvancedOpen(!advancedOpen)}
+            >
+              <span className={`form-accordion-arrow ${advancedOpen ? 'open' : ''}`}>&#9654;</span>
+              Advanced Options
+            </button>
+            {advancedOpen && (
+              <div className="form-accordion-body">
+                <div className="form-group">
+                  <div className="form-check">
+                    <input
+                      type="checkbox"
+                      id="isPSB"
+                      checked={form.isPSB}
+                      onChange={(e) => updateForm('isPSB', e.target.checked)}
+                    />
+                    <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
+                  </div>
+                </div>
+                <div className="form-group" />
 
-          <div className="form-group form-full">
-            <label>Entitlements (one per line)</label>
-            <textarea
-              value={form.entitlement}
-              onChange={(e) => updateForm('entitlement', e.target.value)}
-              rows={2}
-            />
-          </div>
+                <div className="form-group form-full">
+                  <label>Entitlements (one per line)</label>
+                  <textarea
+                    value={form.entitlement}
+                    onChange={(e) => updateForm('entitlement', e.target.value)}
+                    rows={2}
+                  />
+                </div>
 
-          <div className="form-section-title">Supervisory Authority</div>
-          <div className="form-group">
-            <label>Name *</label>
-            <input
-              value={form.supervisoryAuthorityName}
-              onChange={(e) => updateForm('supervisoryAuthorityName', e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              value={form.supervisoryAuthorityEmail}
-              onChange={(e) => updateForm('supervisoryAuthorityEmail', e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Phone</label>
-            <input
-              value={form.supervisoryAuthorityPhone}
-              onChange={(e) => updateForm('supervisoryAuthorityPhone', e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Info URIs (comma-separated)</label>
-            <input
-              value={form.supervisoryAuthorityURI}
-              onChange={(e) => updateForm('supervisoryAuthorityURI', e.target.value)}
-            />
-          </div>
-
-          <div className="form-section-title">Intended Use (JSON)</div>
-          <div className="form-group form-full">
-            <label>Intended Use</label>
-            <textarea
-              className="json-textarea"
-              value={form.intendedUse}
-              onChange={(e) => updateForm('intendedUse', e.target.value)}
-            />
+                <div className="form-section-title">Supervisory Authority</div>
+                <div className="form-group">
+                  <label>Name *</label>
+                  <input
+                    value={form.supervisoryAuthorityName}
+                    onChange={(e) => updateForm('supervisoryAuthorityName', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    value={form.supervisoryAuthorityEmail}
+                    onChange={(e) => updateForm('supervisoryAuthorityEmail', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone</label>
+                  <input
+                    value={form.supervisoryAuthorityPhone}
+                    onChange={(e) => updateForm('supervisoryAuthorityPhone', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Info URIs (comma-separated)</label>
+                  <input
+                    value={form.supervisoryAuthorityURI}
+                    onChange={(e) => updateForm('supervisoryAuthorityURI', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -12,7 +12,7 @@ import {
   deleteWRP,
   generateECP256KeyPair,
 } from '../api/client';
-import { registrationCertPreset, accessCertPreset } from '../presets/data';
+import { registrationCertPreset, accessCertPreset, credentialPresets } from '../presets/data';
 import { decodeX509, decodeJWT } from '../utils/certDecode';
 
 function formatDN(dn: Record<string, string>): string {
@@ -233,6 +233,7 @@ export default function RPDetail() {
   const [regPurposeLang, setRegPurposeLang] = useState(registrationCertPreset.purpose[0].lang);
   const [regPurposeContent, setRegPurposeContent] = useState(registrationCertPreset.purpose[0].content);
   const [regCredentials, setRegCredentials] = useState(JSON.stringify(registrationCertPreset.credentials, null, 2));
+  const [regCredentialCustom, setRegCredentialCustom] = useState(false);
   const [regIntermediary, setRegIntermediary] = useState('');
 
   const load = useCallback(async () => {
@@ -274,6 +275,8 @@ export default function RPDetail() {
     }
   };
 
+  const usesIntermediary = rp?.usesIntermediary?.length > 0;
+
   const openRegForm = () => {
     setShowRegForm(true);
     setShowAccessForm(false);
@@ -282,10 +285,21 @@ export default function RPDetail() {
     setRegPurposeLang(registrationCertPreset.purpose[0].lang);
     setRegPurposeContent(registrationCertPreset.purpose[0].content);
     setRegCredentials(JSON.stringify(registrationCertPreset.credentials, null, 2));
+    setRegCredentialCustom(false);
     // Pre-fill intermediary ID from RP's usesIntermediary reference
     const interRef = rp?.usesIntermediary?.[0];
     const interId = interRef?.registryURI?.replace(/^\/wrp\//, '') ?? '';
     setRegIntermediary(interId);
+  };
+
+  const applyCredentialPreset = (key: 'pid' | 'ageVerification' | 'custom') => {
+    if (key === 'custom') {
+      setRegCredentials('[\n  \n]');
+      setRegCredentialCustom(true);
+    } else {
+      setRegCredentials(JSON.stringify(credentialPresets[key], null, 2));
+      setRegCredentialCustom(false);
+    }
   };
 
   const handleCreateAccessCert = async (e: React.FormEvent) => {
@@ -494,14 +508,16 @@ export default function RPDetail() {
             <button
               className="btn btn-primary"
               onClick={showAccessForm ? () => setShowAccessForm(false) : openAccessForm}
-              disabled={creating !== null}
+              disabled={creating !== null || usesIntermediary}
             >
               {showAccessForm ? 'Cancel' : 'Create Access Cert'}
             </button>
           )}
         </div>
         <p className="subtitle">
-          X.509 certificates for mTLS access. A fresh EC P-256 key pair is generated for each certificate.
+          {usesIntermediary
+            ? 'Access certificates are managed by your intermediary.'
+            : 'X.509 certificates for mTLS access. A fresh EC P-256 key pair is generated for each certificate.'}
         </p>
 
         {/* Access Cert Form */}
@@ -668,25 +684,33 @@ export default function RPDetail() {
                 />
               </div>
 
-              <div className="form-section-title">Credentials (JSON)</div>
+              <div className="form-section-title">Credentials</div>
               <div className="form-group form-full">
-                <label>Credentials</label>
+                <div className="credential-presets">
+                  <button type="button" className="btn btn-sm" onClick={() => applyCredentialPreset('pid')}>PID</button>
+                  <button type="button" className="btn btn-sm" onClick={() => applyCredentialPreset('ageVerification')}>Age Verification</button>
+                  <button type="button" className="btn btn-sm" onClick={() => applyCredentialPreset('custom')}>Custom</button>
+                </div>
                 <textarea
                   className="json-textarea"
                   value={regCredentials}
                   onChange={(e) => setRegCredentials(e.target.value)}
+                  readOnly={!regCredentialCustom}
                 />
               </div>
 
-              <div className="form-section-title">Intermediary (optional)</div>
-              <div className="form-group form-full">
-                <label>Intermediary RP ID</label>
-                <input
-                  value={regIntermediary}
-                  onChange={(e) => setRegIntermediary(e.target.value)}
-                  placeholder="Leave empty if not using intermediary"
-                />
-              </div>
+              {usesIntermediary && (
+                <>
+                  <div className="form-section-title">Intermediary</div>
+                  <div className="form-group form-full">
+                    <label>Intermediary RP ID</label>
+                    <input
+                      value={regIntermediary}
+                      readOnly
+                    />
+                  </div>
+                </>
+              )}
             </div>
             <div className="form-actions">
               <button

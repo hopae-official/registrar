@@ -275,6 +275,28 @@ export const registrationCertPreset = {
   ],
 };
 
+export const credentialPresets = {
+  pid: [
+    {
+      format: 'vc+sd-jwt',
+      meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+      claim: [
+        { path: ['given_name'] },
+        { path: ['family_name'] },
+        { path: ['birth_date'] },
+        { path: ['resident_address'] },
+      ],
+    },
+  ],
+  ageVerification: [
+    {
+      format: 'vc+sd-jwt',
+      meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+      claim: [{ path: ['age_over_18'] }],
+    },
+  ],
+};
+
 export const accessCertPreset = {
   dns: ['verify.hopae.com', 'api.example.lu'],
 };

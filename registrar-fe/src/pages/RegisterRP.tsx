@@ -16,12 +16,14 @@ export default function RegisterRP() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Intermediary state
   const [intermediaries, setIntermediaries] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedIntermediary, setSelectedIntermediary] = useState<any | null>(null);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [showingIntermediary, setShowingIntermediary] = useState(false);
 
   const loadIntermediaries = useCallback(async () => {
     try {
@@ -116,7 +118,16 @@ export default function RegisterRP() {
     if (file) setUploadedFile(file.name);
   };
 
+  const cancelIntermediary = () => {
+    setShowingIntermediary(false);
+    setSelectedIntermediary(null);
+    setUploadedFile(null);
+    setSearch('');
+  };
+
   if (step === 'advanced') {
+    const hasIntermediary = selectedIntermediary && uploadedFile;
+
     return (
       <div className="page register-page">
         <div className="step-indicator">
@@ -131,7 +142,105 @@ export default function RegisterRP() {
 
         {error && <div className="alert alert-error">{error}</div>}
 
-        <div className="form-actions" style={{ marginBottom: 20 }}>
+        {!showingIntermediary ? (
+          <div style={{ textAlign: 'left', padding: '32px 0' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowingIntermediary(true)}
+              disabled={creating}
+            >
+              Select Intermediary
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ marginBottom: 12, textAlign: 'right' }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={cancelIntermediary}
+                disabled={creating}
+              >
+                Cancel Selection
+              </button>
+            </div>
+
+            <div className="intermediary-selector">
+              <input
+                type="text"
+                placeholder="Search intermediaries by name or identifier..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="intermediary-search"
+              />
+              <div className="intermediary-list">
+                {filteredIntermediaries.length === 0 ? (
+                  <p className="empty" style={{ padding: 16 }}>No intermediaries found.</p>
+                ) : (
+                  filteredIntermediaries.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`intermediary-option ${selectedIntermediary?.id === item.id ? 'intermediary-selected' : ''}`}
+                      onClick={() => setSelectedIntermediary(
+                        selectedIntermediary?.id === item.id ? null : item,
+                      )}
+                    >
+                      <div className="intermediary-option-name">
+                        {item.tradeName || item.legalName}
+                      </div>
+                      <div className="intermediary-option-detail">
+                        {item.legalName}
+                        {item.identifier?.[0]?.value && (
+                          <> &middot; <span className="identifier">{item.identifier[0].value}</span></>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {selectedIntermediary && (
+              <div style={{ marginTop: 20 }}>
+                <h3>Upload Contract</h3>
+                <p className="subtitle">
+                  Upload the intermediary contract document to proceed.
+                </p>
+
+                {!uploadedFile ? (
+                  <div
+                    className="file-drop-zone"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('contract-file-input')?.click()}
+                  >
+                    <div className="file-drop-icon">&#128196;</div>
+                    <p className="file-drop-text">
+                      Drag & drop your contract here, or click to browse
+                    </p>
+                    <p className="file-drop-hint">
+                      PDF, JPG, or PNG up to 10MB
+                    </p>
+                    <input
+                      id="contract-file-input"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      style={{ display: 'none' }}
+                      onChange={handleFileSelect}
+                    />
+                  </div>
+                ) : (
+                  <div className="file-uploaded">
+                    <div className="file-uploaded-icon">&#10003;</div>
+                    <p className="file-uploaded-name">{uploadedFile}</p>
+                    <p className="file-uploaded-status">File uploaded successfully</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="form-actions" style={{ marginTop: 24 }}>
           <button
             className="btn btn-secondary"
             onClick={() => setStep('rp-info')}
@@ -141,94 +250,12 @@ export default function RegisterRP() {
           </button>
           <button
             className="btn btn-primary"
-            onClick={() => handleRegister(false)}
-            disabled={creating}
+            onClick={() => handleRegister(!!hasIntermediary)}
+            disabled={creating || (showingIntermediary && !hasIntermediary)}
           >
-            {creating ? 'Registering...' : 'Skip & Register'}
+            {creating ? 'Registering...' : hasIntermediary ? 'Register' : 'Skip'}
           </button>
         </div>
-
-        <div className="intermediary-selector">
-          <input
-            type="text"
-            placeholder="Search intermediaries by name or identifier..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="intermediary-search"
-          />
-          <div className="intermediary-list">
-            {filteredIntermediaries.length === 0 ? (
-              <p className="empty" style={{ padding: 16 }}>No intermediaries found.</p>
-            ) : (
-              filteredIntermediaries.map((item) => (
-                <div
-                  key={item.id}
-                  className={`intermediary-option ${selectedIntermediary?.id === item.id ? 'intermediary-selected' : ''}`}
-                  onClick={() => setSelectedIntermediary(
-                    selectedIntermediary?.id === item.id ? null : item,
-                  )}
-                >
-                  <div className="intermediary-option-name">
-                    {item.tradeName || item.legalName}
-                  </div>
-                  <div className="intermediary-option-detail">
-                    {item.legalName}
-                    {item.identifier?.[0]?.value && (
-                      <> &middot; <span className="identifier">{item.identifier[0].value}</span></>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {selectedIntermediary && (
-          <div style={{ marginTop: 20 }}>
-            <h3>Upload Contract</h3>
-            <p className="subtitle">
-              Upload the intermediary contract document to proceed.
-            </p>
-
-            {!uploadedFile ? (
-              <div
-                className="file-drop-zone"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('contract-file-input')?.click()}
-              >
-                <div className="file-drop-icon">&#128196;</div>
-                <p className="file-drop-text">
-                  Drag & drop your contract here, or click to browse
-                </p>
-                <p className="file-drop-hint">
-                  PDF, JPG, or PNG up to 10MB
-                </p>
-                <input
-                  id="contract-file-input"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  style={{ display: 'none' }}
-                  onChange={handleFileSelect}
-                />
-              </div>
-            ) : (
-              <div className="file-uploaded">
-                <div className="file-uploaded-icon">&#10003;</div>
-                <p className="file-uploaded-name">{uploadedFile}</p>
-                <p className="file-uploaded-status">File uploaded successfully</p>
-                <button
-                  className="btn btn-primary"
-                  style={{ marginTop: 16 }}
-                  onClick={() => handleRegister(true)}
-                  disabled={creating}
-                >
-                  {creating ? 'Registering...' : 'Register'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     );
   }
@@ -336,68 +363,71 @@ export default function RegisterRP() {
             />
           </div>
 
-          <div className="form-section-title">Options</div>
-          <div className="form-group">
-            <div className="form-check">
-              <input
-                type="checkbox"
-                id="isPSB"
-                checked={form.isPSB}
-                onChange={(e) => updateForm('isPSB', e.target.checked)}
-              />
-              <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
-            </div>
-          </div>
-          <div className="form-group" />
+          <div className="form-accordion">
+            <button
+              type="button"
+              className="form-accordion-toggle"
+              onClick={() => setAdvancedOpen(!advancedOpen)}
+            >
+              <span className={`form-accordion-arrow ${advancedOpen ? 'open' : ''}`}>&#9654;</span>
+              Advanced Options
+            </button>
+            {advancedOpen && (
+              <div className="form-accordion-body">
+                <div className="form-group">
+                  <div className="form-check">
+                    <input
+                      type="checkbox"
+                      id="isPSB"
+                      checked={form.isPSB}
+                      onChange={(e) => updateForm('isPSB', e.target.checked)}
+                    />
+                    <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
+                  </div>
+                </div>
+                <div className="form-group" />
 
-          <div className="form-group form-full">
-            <label>Entitlements (one per line)</label>
-            <textarea
-              value={form.entitlement}
-              onChange={(e) => updateForm('entitlement', e.target.value)}
-              rows={2}
-            />
-          </div>
+                <div className="form-group form-full">
+                  <label>Entitlements (one per line)</label>
+                  <textarea
+                    value={form.entitlement}
+                    onChange={(e) => updateForm('entitlement', e.target.value)}
+                    rows={2}
+                  />
+                </div>
 
-          <div className="form-section-title">Supervisory Authority</div>
-          <div className="form-group">
-            <label>Name *</label>
-            <input
-              value={form.supervisoryAuthorityName}
-              onChange={(e) => updateForm('supervisoryAuthorityName', e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              value={form.supervisoryAuthorityEmail}
-              onChange={(e) => updateForm('supervisoryAuthorityEmail', e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Phone</label>
-            <input
-              value={form.supervisoryAuthorityPhone}
-              onChange={(e) => updateForm('supervisoryAuthorityPhone', e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label>Info URIs (comma-separated)</label>
-            <input
-              value={form.supervisoryAuthorityURI}
-              onChange={(e) => updateForm('supervisoryAuthorityURI', e.target.value)}
-            />
-          </div>
-
-          <div className="form-section-title">Intended Use (JSON)</div>
-          <div className="form-group form-full">
-            <label>Intended Use</label>
-            <textarea
-              className="json-textarea"
-              value={form.intendedUse}
-              onChange={(e) => updateForm('intendedUse', e.target.value)}
-            />
+                <div className="form-section-title">Supervisory Authority</div>
+                <div className="form-group">
+                  <label>Name *</label>
+                  <input
+                    value={form.supervisoryAuthorityName}
+                    onChange={(e) => updateForm('supervisoryAuthorityName', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    value={form.supervisoryAuthorityEmail}
+                    onChange={(e) => updateForm('supervisoryAuthorityEmail', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone</label>
+                  <input
+                    value={form.supervisoryAuthorityPhone}
+                    onChange={(e) => updateForm('supervisoryAuthorityPhone', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Info URIs (comma-separated)</label>
+                  <input
+                    value={form.supervisoryAuthorityURI}
+                    onChange={(e) => updateForm('supervisoryAuthorityURI', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
