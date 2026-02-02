@@ -37,9 +37,11 @@ export default function Dashboard() {
       <section className="section">
         <div className="section-header">
           <h2>My Relying Parties</h2>
-          <Link to="/dashboard/register" className="btn btn-primary">
-            Register
-          </Link>
+          {!loading && rps.length > 0 && (
+            <Link to="/dashboard/register" className="btn btn-primary">
+              Register
+            </Link>
+          )}
         </div>
         {loading ? (
           <p className="loading">Loading...</p>

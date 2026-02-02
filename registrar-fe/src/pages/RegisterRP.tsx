@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createWRP, listWRPs } from '../api/client';
 import { normalRPPreset, dummyIntermediaries } from '../presets/data';
@@ -295,7 +295,6 @@ export default function RegisterRP() {
       <h1>Register Relying Party</h1>
       <p className="subtitle">
         Fill in your organization details to register as a Relying Party.
-        {' '}<br /><Link to="/dashboard/register-intermediary" className="text-link-sm text-blue-500 hover:text-blue-600">&gt; Registeri as an intermediary</Link>
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}

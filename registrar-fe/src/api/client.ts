@@ -87,6 +87,14 @@ export function createWRP(token: string, dto: any) {
   });
 }
 
+export function updateWRP(token: string, id: string, dto: any) {
+  return request<any>(`/wrp/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
 export function deleteWRP(token: string, id: string) {
   return request<void>(`/wrp/${id}`, {
     method: 'DELETE',

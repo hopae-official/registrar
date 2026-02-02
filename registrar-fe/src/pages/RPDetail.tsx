@@ -426,9 +426,19 @@ export default function RPDetail() {
           </div>
         </div>
         {token && (
-          <button className="btn btn-danger" onClick={handleDelete}>
-            Delete RP
-          </button>
+          <div className="detail-header-actions">
+            {!rp.isIntermediary && !usesIntermediary && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => navigate(`/dashboard/rp/${id}/become-intermediary`)}
+              >
+                Become Intermediary
+              </button>
+            )}
+            <button className="btn btn-danger" onClick={handleDelete}>
+              Delete RP
+            </button>
+          </div>
         )}
       </div>
 

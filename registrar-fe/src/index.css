@@ -508,6 +508,12 @@ body {
   margin-bottom: 16px;
 }
 
+.detail-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .back-link {
   display: inline-block;
   margin-bottom: 16px;
