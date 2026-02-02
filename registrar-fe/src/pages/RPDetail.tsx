@@ -234,6 +234,7 @@ export default function RPDetail() {
   const [regPurposeContent, setRegPurposeContent] = useState(registrationCertPreset.purpose[0].content);
   const [regCredentials, setRegCredentials] = useState(JSON.stringify(registrationCertPreset.credentials, null, 2));
   const [regCredentialCustom, setRegCredentialCustom] = useState(false);
+  const [regCredentialPreset, setRegCredentialPreset] = useState<'pid' | 'ageVerification' | 'custom'>('pid');
   const [regIntermediary, setRegIntermediary] = useState('');
 
   const load = useCallback(async () => {
@@ -286,6 +287,7 @@ export default function RPDetail() {
     setRegPurposeContent(registrationCertPreset.purpose[0].content);
     setRegCredentials(JSON.stringify(registrationCertPreset.credentials, null, 2));
     setRegCredentialCustom(false);
+    setRegCredentialPreset('pid');
     // Pre-fill intermediary ID from RP's usesIntermediary reference
     const interRef = rp?.usesIntermediary?.[0];
     const interId = interRef?.registryURI?.replace(/^\/wrp\//, '') ?? '';
@@ -293,6 +295,7 @@ export default function RPDetail() {
   };
 
   const applyCredentialPreset = (key: 'pid' | 'ageVerification' | 'custom') => {
+    setRegCredentialPreset(key);
     if (key === 'custom') {
       setRegCredentials('[\n  \n]');
       setRegCredentialCustom(true);
@@ -687,9 +690,30 @@ export default function RPDetail() {
               <div className="form-section-title">Credentials</div>
               <div className="form-group form-full">
                 <div className="credential-presets">
-                  <button type="button" className="btn btn-sm" onClick={() => applyCredentialPreset('pid')}>PID</button>
-                  <button type="button" className="btn btn-sm" onClick={() => applyCredentialPreset('ageVerification')}>Age Verification</button>
-                  <button type="button" className="btn btn-sm" onClick={() => applyCredentialPreset('custom')}>Custom</button>
+                  <button
+                    type="button"
+                    className={`credential-preset-card ${regCredentialPreset === 'pid' ? 'credential-preset-active' : ''}`}
+                    onClick={() => applyCredentialPreset('pid')}
+                  >
+                    <span className="credential-preset-title">PID</span>
+                    <span className="credential-preset-desc">Name, birth date, address</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`credential-preset-card ${regCredentialPreset === 'ageVerification' ? 'credential-preset-active' : ''}`}
+                    onClick={() => applyCredentialPreset('ageVerification')}
+                  >
+                    <span className="credential-preset-title">Age Verification</span>
+                    <span className="credential-preset-desc">Age over 18 check</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`credential-preset-card ${regCredentialPreset === 'custom' ? 'credential-preset-active' : ''}`}
+                    onClick={() => applyCredentialPreset('custom')}
+                  >
+                    <span className="credential-preset-title">Custom</span>
+                    <span className="credential-preset-desc">Define your own claims</span>
+                  </button>
                 </div>
                 <textarea
                   className="json-textarea"

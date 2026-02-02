@@ -270,7 +270,12 @@ export const registrationCertPreset = {
     {
       format: 'vc+sd-jwt',
       meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
-      claim: [{ path: ['given_name'] }, { path: ['family_name'] }],
+      claim: [
+        { path: ['given_name'] },
+        { path: ['family_name'] },
+        { path: ['birth_date'] },
+        { path: ['resident_address'] },
+      ],
     },
   ],
 };
