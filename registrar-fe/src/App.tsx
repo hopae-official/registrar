@@ -5,6 +5,8 @@ import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
+import RegisterRP from './pages/RegisterRP';
+import RegisterIntermediary from './pages/RegisterIntermediary';
 import RPDetail from './pages/RPDetail';
 import RPPublicDetail from './pages/RPPublicDetail';
 
@@ -64,6 +66,8 @@ export default function App() {
               <Route path="/sign-in" element={<SignIn />} />
               <Route path="/sign-up" element={<SignUp />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/register" element={<RegisterRP />} />
+              <Route path="/dashboard/register-intermediary" element={<RegisterIntermediary />} />
               <Route path="/dashboard/rp/:id" element={<RPDetail />} />
               <Route path="/rp/:id" element={<RPPublicDetail />} />
             </Routes>

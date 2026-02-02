@@ -184,6 +184,80 @@ export function rpWithIntermediaryPreset(intermediary: {
   };
 }
 
+// --- Dummy Intermediaries ---
+export const dummyIntermediaries = [
+  {
+    id: 'dummy-1',
+    legalName: 'TrustBridge GmbH',
+    tradeName: 'TrustBridge',
+    identifier: [{ type: 'EUID', value: 'DEBER.90001001' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-1',
+  },
+  {
+    id: 'dummy-2',
+    legalName: 'Nordic eID Solutions AB',
+    tradeName: 'NordicID',
+    identifier: [{ type: 'EUID', value: 'SESTO.80002002' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-2',
+  },
+  {
+    id: 'dummy-3',
+    legalName: 'VeriFrance S.A.S.',
+    tradeName: 'VeriFrance',
+    identifier: [{ type: 'EUID', value: 'FRPAR.70003003' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-3',
+  },
+  {
+    id: 'dummy-4',
+    legalName: 'Identità Digitale S.r.l.',
+    tradeName: 'IDItalia',
+    identifier: [{ type: 'EUID', value: 'ITROM.60004004' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-4',
+  },
+  {
+    id: 'dummy-5',
+    legalName: 'Iberian Trust Services S.L.',
+    tradeName: 'IberTrust',
+    identifier: [{ type: 'EUID', value: 'ESMAD.50005005' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-5',
+  },
+  {
+    id: 'dummy-6',
+    legalName: 'EuroSign B.V.',
+    tradeName: 'EuroSign',
+    identifier: [{ type: 'EUID', value: 'NLAMS.40006006' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-6',
+  },
+  {
+    id: 'dummy-7',
+    legalName: 'WalletConnect Belgium S.A.',
+    tradeName: 'WalletConnect BE',
+    identifier: [{ type: 'EUID', value: 'BEBRU.30007007' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-7',
+  },
+  {
+    id: 'dummy-8',
+    legalName: 'AuthVault OÜ',
+    tradeName: 'AuthVault',
+    identifier: [{ type: 'EUID', value: 'EETAL.20008008' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-8',
+  },
+  {
+    id: 'dummy-9',
+    legalName: 'HellasTrust A.E.',
+    tradeName: 'HellasTrust',
+    identifier: [{ type: 'EUID', value: 'GRATH.10009009' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-9',
+  },
+  {
+    id: 'dummy-10',
+    legalName: 'Alpine Digital AG',
+    tradeName: 'AlpineID',
+    identifier: [{ type: 'EUID', value: 'ATWIE.00010010' }],
+    registryURI: 'https://registry.example.eu/wrp/dummy-10',
+  },
+];
+
 // --- Certificate Presets ---
 
 export const registrationCertPreset = {

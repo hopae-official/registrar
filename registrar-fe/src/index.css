@@ -1269,6 +1269,101 @@ body {
   margin-bottom: 12px;
 }
 
+/* Dashboard actions */
+.dashboard-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Demo Fill button */
+.demo-fill-btn {
+  background: #fff8e1;
+  color: #8d6e00;
+  border-color: #ffe082;
+  font-weight: 600;
+}
+
+.demo-fill-btn:hover {
+  background: #ffecb3;
+  border-color: #ffd54f;
+}
+
+/* Small text link */
+.text-link-sm {
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+/* Register page (wider layout) */
+.register-page {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Intermediary selector */
+.intermediary-selector {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.intermediary-selector .intermediary-search {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  outline: none;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.intermediary-selector .intermediary-search:focus {
+  border-bottom-color: var(--color-primary);
+}
+
+.intermediary-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.intermediary-option {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-bg);
+  transition: background 0.15s;
+}
+
+.intermediary-option:last-child {
+  border-bottom: none;
+}
+
+.intermediary-option:hover {
+  background: var(--color-bg);
+}
+
+.intermediary-option.intermediary-selected {
+  background: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary);
+}
+
+.intermediary-option-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.intermediary-option-detail {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
 /* ===== Mobile responsive ===== */
 @media (max-width: 768px) {
   /* Header: shrink gaps, hide logo subtitle */
@@ -1418,5 +1513,25 @@ body {
     gap: 8px;
     padding: 12px 16px;
     text-align: center;
+  }
+
+  /* Dashboard actions: stack on mobile */
+  .dashboard-actions {
+    flex-direction: column;
+  }
+
+  .dashboard-actions .btn {
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Register page: full width on mobile */
+  .register-page {
+    max-width: 100%;
+  }
+
+  /* Intermediary list: shorter on mobile */
+  .intermediary-list {
+    max-height: 240px;
   }
 }
