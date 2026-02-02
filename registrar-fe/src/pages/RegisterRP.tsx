@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createWRP, listWRPs } from '../api/client';
@@ -23,6 +23,8 @@ export default function RegisterRP() {
   const [search, setSearch] = useState('');
   const [selectedIntermediary, setSelectedIntermediary] = useState<any | null>(null);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showingIntermediary, setShowingIntermediary] = useState(false);
 
   const loadIntermediaries = useCallback(async () => {
@@ -107,15 +109,29 @@ export default function RegisterRP() {
     );
   });
 
+  const simulateUpload = (fileName: string) => {
+    setUploading(true);
+    uploadTimerRef.current = setTimeout(() => {
+      setUploading(false);
+      setUploadedFile(fileName);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (uploadTimerRef.current) clearTimeout(uploadTimerRef.current);
+    };
+  }, []);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setUploadedFile(file.name);
+    if (file) simulateUpload(file.name);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file) setUploadedFile(file.name);
+    if (file) simulateUpload(file.name);
   };
 
   const cancelIntermediary = () => {
@@ -206,7 +222,15 @@ export default function RegisterRP() {
                   Upload the intermediary contract document to proceed.
                 </p>
 
-                {!uploadedFile ? (
+                {uploading ? (
+                  <div className="file-uploading">
+                    <p className="file-uploading-name">Uploading...</p>
+                    <div className="file-progress-bar">
+                      <div className="file-progress-fill" />
+                    </div>
+                    <p className="file-uploading-text">Please wait</p>
+                  </div>
+                ) : !uploadedFile ? (
                   <div
                     className="file-drop-zone"
                     onDragOver={(e) => e.preventDefault()}

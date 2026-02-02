@@ -27,6 +27,8 @@ export default function SignUp() {
 
   // File upload state
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,22 +70,27 @@ export default function SignUp() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (approveRef.current) clearTimeout(approveRef.current);
+      if (uploadTimerRef.current) clearTimeout(uploadTimerRef.current);
     };
   }, []);
 
+  const simulateUpload = (fileName: string) => {
+    setUploading(true);
+    uploadTimerRef.current = setTimeout(() => {
+      setUploading(false);
+      setUploadedFile(fileName);
+    }, 1000);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file.name);
-    }
+    if (file) simulateUpload(file.name);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      setUploadedFile(file.name);
-    }
+    if (file) simulateUpload(file.name);
   };
 
   if (step === 'id-validation') {
@@ -171,7 +178,15 @@ export default function SignUp() {
             Upload your business registration document for verification.
           </p>
 
-          {!uploadedFile ? (
+          {uploading ? (
+            <div className="file-uploading">
+              <p className="file-uploading-name">Uploading...</p>
+              <div className="file-progress-bar">
+                <div className="file-progress-fill" />
+              </div>
+              <p className="file-uploading-text">Please wait</p>
+            </div>
+          ) : !uploadedFile ? (
             <div
               className="file-drop-zone"
               onDragOver={(e) => e.preventDefault()}

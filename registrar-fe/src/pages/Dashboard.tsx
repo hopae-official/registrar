@@ -44,9 +44,16 @@ export default function Dashboard() {
         {loading ? (
           <p className="loading">Loading...</p>
         ) : rps.length === 0 ? (
-          <p className="empty">
-            No relying parties registered yet. Click "Register" to get started.
-          </p>
+          <div className="empty-state">
+            <div className="empty-state-icon">&#128203;</div>
+            <p className="empty-state-title">No Relying Parties Yet</p>
+            <p className="empty-state-desc">
+              Register your first Relying Party to start managing certificates and wallet integrations.
+            </p>
+            <Link to="/dashboard/register" className="btn btn-primary">
+              Register Relying Party
+            </Link>
+          </div>
         ) : (
           <div className="rp-grid">
             {rps.map((rp: any) => (

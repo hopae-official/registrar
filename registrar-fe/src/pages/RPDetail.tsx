@@ -224,17 +224,16 @@ export default function RPDetail() {
   const [showAccessForm, setShowAccessForm] = useState(false);
   const [accessDns, setAccessDns] = useState(accessCertPreset.dns.join(', '));
   const [accessPubKey, setAccessPubKey] = useState('');
-  const [generatingKey, setGeneratingKey] = useState(false);
 
   // Registration cert form
   const [showRegForm, setShowRegForm] = useState(false);
-  const [regSupportUri, setRegSupportUri] = useState(registrationCertPreset.support_uri);
-  const [regPrivacyPolicy, setRegPrivacyPolicy] = useState(registrationCertPreset.privacy_policy);
-  const [regPurposeLang, setRegPurposeLang] = useState(registrationCertPreset.purpose[0].lang);
-  const [regPurposeContent, setRegPurposeContent] = useState(registrationCertPreset.purpose[0].content);
-  const [regCredentials, setRegCredentials] = useState(JSON.stringify(registrationCertPreset.credentials, null, 2));
+  const [regSupportUri, setRegSupportUri] = useState('');
+  const [regPrivacyPolicy, setRegPrivacyPolicy] = useState('');
+  const [regPurposeLang, setRegPurposeLang] = useState('en');
+  const [regPurposeContent, setRegPurposeContent] = useState('');
+  const [regCredentials, setRegCredentials] = useState('');
   const [regCredentialCustom, setRegCredentialCustom] = useState(false);
-  const [regCredentialPreset, setRegCredentialPreset] = useState<'pid' | 'ageVerification' | 'custom'>('pid');
+  const [regCredentialPreset, setRegCredentialPreset] = useState<'pid' | 'ageVerification' | 'custom' | null>(null);
   const [regIntermediary, setRegIntermediary] = useState('');
 
   const load = useCallback(async () => {
@@ -260,27 +259,44 @@ export default function RPDetail() {
     load();
   }, [load]);
 
-  const openAccessForm = async () => {
+  const openAccessForm = () => {
     setShowAccessForm(true);
     setShowRegForm(false);
     setAccessDns(accessCertPreset.dns.join(', '));
     setAccessPubKey('');
-    setGeneratingKey(true);
+  };
+
+  const prefillAccessForm = async () => {
+    setAccessDns(accessCertPreset.dns.join(', '));
     try {
       const key = await generateECP256KeyPair();
       setAccessPubKey(key);
     } catch (err: any) {
       setAccessPubKey(`Error generating key: ${err.message}`);
-    } finally {
-      setGeneratingKey(false);
     }
   };
 
   const usesIntermediary = rp?.usesIntermediary?.length > 0;
 
+  const fillRegIntermediary = () => {
+    const interRef = rp?.usesIntermediary?.[0];
+    return interRef?.registryURI?.replace(/^\/wrp\//, '') ?? '';
+  };
+
   const openRegForm = () => {
     setShowRegForm(true);
     setShowAccessForm(false);
+    setRegSupportUri('');
+    setRegPrivacyPolicy('');
+    setRegPurposeLang('en');
+    setRegPurposeContent('');
+    setRegCredentials('');
+    setRegCredentialCustom(false);
+    setRegCredentialPreset(null);
+    setRegIntermediary(fillRegIntermediary());
+  };
+
+  const prefillRegForm = () => {
     setRegSupportUri(registrationCertPreset.support_uri);
     setRegPrivacyPolicy(registrationCertPreset.privacy_policy);
     setRegPurposeLang(registrationCertPreset.purpose[0].lang);
@@ -288,10 +304,7 @@ export default function RPDetail() {
     setRegCredentials(JSON.stringify(registrationCertPreset.credentials, null, 2));
     setRegCredentialCustom(false);
     setRegCredentialPreset('pid');
-    // Pre-fill intermediary ID from RP's usesIntermediary reference
-    const interRef = rp?.usesIntermediary?.[0];
-    const interId = interRef?.registryURI?.replace(/^\/wrp\//, '') ?? '';
-    setRegIntermediary(interId);
+    setRegIntermediary(fillRegIntermediary());
   };
 
   const applyCredentialPreset = (key: 'pid' | 'ageVerification' | 'custom') => {
@@ -526,7 +539,10 @@ export default function RPDetail() {
         {/* Access Cert Form */}
         {showAccessForm && (
           <form className="form-panel" onSubmit={handleCreateAccessCert}>
-            <h3>Create Access Certificate</h3>
+            <div className="form-panel-header">
+              <h3>Create Access Certificate</h3>
+              <button type="button" className="btn btn-sm text-link-sm" onClick={prefillAccessForm}>Prefill</button>
+            </div>
             <div className="form-grid">
               <div className="form-group form-full">
                 <label>DNS Entries (comma-separated)</label>
@@ -537,11 +553,12 @@ export default function RPDetail() {
                 />
               </div>
               <div className="form-group form-full">
-                <label>Public Key (EC P-256, auto-generated)</label>
+                <label>Public Key (EC P-256 PEM)</label>
                 <textarea
-                  readOnly
-                  value={generatingKey ? 'Generating key pair...' : accessPubKey}
+                  value={accessPubKey}
+                  onChange={(e) => setAccessPubKey(e.target.value)}
                   rows={5}
+                  placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----"
                 />
               </div>
             </div>
@@ -555,26 +572,9 @@ export default function RPDetail() {
                 Cancel
               </button>
               <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={async () => {
-                  setGeneratingKey(true);
-                  try {
-                    setAccessPubKey(await generateECP256KeyPair());
-                  } catch (err: any) {
-                    setAccessPubKey(`Error: ${err.message}`);
-                  } finally {
-                    setGeneratingKey(false);
-                  }
-                }}
-                disabled={generatingKey || creating !== null}
-              >
-                Regenerate Key
-              </button>
-              <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={creating !== null || generatingKey || !accessPubKey}
+                disabled={creating !== null || !accessPubKey}
               >
                 {creating === 'access' ? 'Creating...' : 'Create Certificate'}
               </button>
@@ -652,7 +652,10 @@ export default function RPDetail() {
         {/* Registration Cert Form */}
         {showRegForm && (
           <form className="form-panel" onSubmit={handleCreateRegCert}>
-            <h3>Create Registration Certificate</h3>
+            <div className="form-panel-header">
+              <h3>Create Registration Certificate</h3>
+              <button type="button" className="btn btn-sm text-link-sm" onClick={prefillRegForm}>Prefill</button>
+            </div>
             <div className="form-grid">
               <div className="form-group">
                 <label>Support URI</label>
