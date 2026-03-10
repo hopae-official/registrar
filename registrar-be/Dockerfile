@@ -29,6 +29,8 @@ RUN corepack install && pnpm install --frozen-lockfile --prod --ignore-scripts
 
 COPY --from=builder --chown=eudi:eudi /app/dist ./dist
 
+RUN mkdir -p /app/.certs && chown eudi:eudi /app/.certs
+
 USER eudi
 
 EXPOSE 18000
