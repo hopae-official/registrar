@@ -22,6 +22,8 @@ async function bootstrap() {
     { bufferLogs: true },
   );
   app.useLogger(app.get(Logger));
+  app.enableShutdownHooks();
+  app.setGlobalPrefix('registrar');
 
   const config = new DocumentBuilder()
     .setTitle('Registrar API')
