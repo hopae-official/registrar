@@ -1,0 +1,100 @@
+name: CD Dev
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'registrar-be/**'
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: h-rgtr-euc1-api-ecr-d-260203
+  EKS_CLUSTER: h-hp-euc1-core-k8s-d-260203
+  ENVIRONMENT: dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Check if image exists
+        id: check-image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          RESULT=$(aws ecr describe-images --repository-name $ECR_REPOSITORY --image-ids imageTag=$IMAGE_TAG 2>&1) && {
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Image already exists, skipping build"
+          } || {
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "🔨 Image not found, will build"
+            echo "Detail: $RESULT"
+          }
+
+      - name: Build, tag, and push image to Amazon ECR
+        if: steps.check-image.outputs.exists == 'false'
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./registrar-be
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Set image output
+        id: image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/infra
+          path: infra
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
+
+      - name: Deploy to EKS
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          cd infra/k8s-manifests/rgtr/$ENVIRONMENT
+
+          # Update image in deployment
+          sed -i "s|IMAGE_PLACEHOLDER|$IMAGE|g" deployment.yaml
+
+          # Apply ExternalSecret and wait for sync
+          kubectl apply -f external-secret.yaml
+          kubectl wait --for=condition=SecretSynced externalsecret/rgtr-api-secrets --timeout=60s || true
+
+          # Apply manifests
+          kubectl apply -f service.yaml
+          kubectl apply -f ingress.yaml
+          kubectl apply -f deployment.yaml
+
+          # Wait for rollout
+          kubectl rollout status deployment/rgtr-api --timeout=300s
