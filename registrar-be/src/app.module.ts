@@ -7,6 +7,7 @@ import { RegistrationCertModule } from './modules/registration_cert/registration
 import { RelyingPartyModule } from './modules/relying_party/relying_party.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { createLoggerConfig } from './logger.config';
 import { UserModule } from './modules/user/user.module';
 
@@ -21,6 +22,11 @@ import { UserModule } from './modules/user/user.module';
         ...createLoggerConfig(config),
         forRoutes: [{ path: '{*splat}', method: RequestMethod.ALL }],
       }),
+    }),
+    PrometheusModule.register({
+      defaultMetrics: {
+        enabled: true,
+      },
     }),
     AuthModule,
     AccessCertModule,
