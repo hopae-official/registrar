@@ -6,6 +6,7 @@ on:
       - dev
     paths:
       - 'registrar-be/**'
+      - '.github/workflows/cd-dev.yaml'
 
 env:
   AWS_REGION: eu-central-1
