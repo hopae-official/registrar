@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class JwtGuard implements CanActivate {
   constructor(private readonly authService: AuthService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
     const token = this.extractToken(request);
 
     if (!token) {
@@ -25,7 +25,7 @@ export class JwtGuard implements CanActivate {
     return true;
   }
 
-  private extractToken(request: Request): string | null {
+  private extractToken(request: FastifyRequest): string | null {
     const authHeader = request.headers.authorization;
     if (!authHeader) return null;
 

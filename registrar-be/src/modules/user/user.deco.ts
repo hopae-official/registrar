@@ -1,10 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { User } from './user.service';
 
 export const AuthenticatedUser = createParamDecorator(
   (data: string | undefined, ctx: ExecutionContext) => {
-    const request: Request = ctx.switchToHttp().getRequest();
+    const request = ctx.switchToHttp().getRequest<FastifyRequest>();
     const user = request['user'] as User;
     return user;
   },

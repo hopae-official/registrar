@@ -19,7 +19,7 @@ import {
   ApiResponse,
   ApiProduces,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { RelyingPartyService } from './relying_party.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { JwtGuard } from '../auth/jwt.guard';
@@ -49,7 +49,7 @@ export class RelyingPartyController {
   })
   async findAll(
     @Query() query: SearchRelyingPartyQueryDto,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const data = this.relyingPartyService.findAll(query);
     const jws = await this.cryptoService.signJWT(data, {
@@ -67,7 +67,7 @@ export class RelyingPartyController {
   })
   async checkIntendedUse(
     @Query() query: CheckIntendedUseQueryDto,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const result = this.relyingPartyService.checkIntendedUse(query);
     const jws = await this.cryptoService.signJWT(
@@ -93,7 +93,7 @@ export class RelyingPartyController {
   @ApiProduces('application/jwt')
   @ApiResponse({ status: 200, description: 'JWS-signed WRP data' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  async findOne(@Param('id') id: string, @Res() res: Response) {
+  async findOne(@Param('id') id: string, @Res() res: FastifyReply) {
     const data = this.relyingPartyService.findOne(id);
     const jws = await this.cryptoService.signJWT(data, {
       typ: 'wrp-registry+jwt',
