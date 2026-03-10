@@ -1,3 +1,9 @@
+/**
+ * Must be imported first
+ * Tracing: https://docs.opentelemetry.io/getting-started/nodejs
+ */
+import './tracing';
+
 import { NestFactory } from '@nestjs/core';
 import {
   NestFastifyApplication,
