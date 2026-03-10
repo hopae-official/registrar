@@ -10,6 +10,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { createLoggerConfig } from './logger.config';
 import { UserModule } from './modules/user/user.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UserModule } from './modules/user/user.module';
         enabled: true,
       },
     }),
+    HealthModule,
     AuthModule,
     AccessCertModule,
     RegistrationCertModule,
