@@ -16,6 +16,8 @@ RUN pnpm build
 # Production stage
 FROM node:24-alpine AS production
 
+RUN apk add --no-cache openssl
+
 RUN corepack enable
 
 RUN addgroup --system --gid 1001 eudi && \
