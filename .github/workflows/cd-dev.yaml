@@ -88,10 +88,6 @@ jobs:
           # Update image in deployment
           sed -i "s|IMAGE_PLACEHOLDER|$IMAGE|g" deployment.yaml
 
-          # Apply ExternalSecret and wait for sync
-          kubectl apply -f external-secret.yaml
-          kubectl wait --for=condition=SecretSynced externalsecret/rgtr-api-secrets --timeout=60s || true
-
           # Apply manifests
           kubectl apply -f service.yaml
           kubectl apply -f ingress.yaml
