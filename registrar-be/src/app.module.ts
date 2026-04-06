@@ -2,8 +2,6 @@ import { Module, RequestMethod } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
-import { AccessCertModule } from './modules/access_cert/access_cert.module';
-import { RegistrationCertModule } from './modules/registration_cert/registration_cert.module';
 import { RelyingPartyModule } from './modules/relying_party/relying_party.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
@@ -31,8 +29,6 @@ import { HealthModule } from './modules/health/health.module';
     }),
     HealthModule,
     AuthModule,
-    AccessCertModule,
-    RegistrationCertModule,
     RelyingPartyModule,
     UserModule,
   ],

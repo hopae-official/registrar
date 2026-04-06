@@ -5,10 +5,10 @@ import {
   getWRP,
   listAccessCerts,
   listRegistrationCerts,
-  createAccessCert,
-  createRegistrationCert,
-  revokeAccessCert,
-  revokeRegistrationCert,
+  createAccessCertForWRP as createAccessCert,
+  createRegistrationCertForWRP as createRegistrationCert,
+  revokeAccessCertForWRP as revokeAccessCert,
+  revokeRegistrationCertForWRP as revokeRegistrationCert,
   deleteWRP,
   generateECP256KeyPair,
 } from '../api/client';
@@ -169,10 +169,10 @@ function JWTDecodedView({ jwt }: { jwt: string }) {
           <span className="decoded-value">{String(payload.isPSB)}</span>
         </div>
       )}
-      {payload.act && (
+      {payload.intermediary && (
         <div className="decoded-row">
-          <span className="decoded-label">Intermediary (act)</span>
-          <span className="decoded-value">{payload.act.name} ({payload.act.id})</span>
+          <span className="decoded-label">Intermediary</span>
+          <span className="decoded-value">{payload.intermediary.sname} ({payload.intermediary.sub})</span>
         </div>
       )}
       {payload.dpa && (
@@ -427,14 +427,6 @@ export default function RPDetail() {
         </div>
         {token && (
           <div className="detail-header-actions">
-            {!rp.isIntermediary && !usesIntermediary && (
-              <button
-                className="btn btn-secondary"
-                onClick={() => navigate(`/dashboard/rp/${id}/become-intermediary`)}
-              >
-                Become Intermediary
-              </button>
-            )}
             <button className="btn btn-danger" onClick={handleDelete}>
               Delete RP
             </button>

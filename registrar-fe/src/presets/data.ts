@@ -58,7 +58,7 @@ export const intermediaryPreset = {
       credential: [
         {
           format: 'vc+sd-jwt',
-          meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+          meta: { vct_values: ['urn:eudi:pid:1'] },
           claim: [{ path: ['given_name'] }, { path: ['family_name'] }],
         },
       ],
@@ -99,11 +99,13 @@ export const normalRPPreset = {
             'Customer onboarding and KYC verification for banking services',
         },
       ],
-      privacyPolicy: [{ type: 'text/html', uri: 'https://demobank.example.com/privacy' }],
+      privacyPolicy: [
+        { type: 'text/html', uri: 'https://demobank.example.com/privacy' },
+      ],
       credential: [
         {
           format: 'vc+sd-jwt',
-          meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+          meta: { vct_values: ['urn:eudi:pid:1'] },
           claim: [
             { path: ['given_name'] },
             { path: ['family_name'] },
@@ -159,7 +161,7 @@ export function rpWithIntermediaryPreset(intermediary: {
         credential: [
           {
             format: 'vc+sd-jwt',
-            meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+            meta: { vct_values: ['urn:eudi:pid:1'] },
             claim: [{ path: ['age_over_18'] }],
           },
         ],
@@ -269,7 +271,7 @@ export const registrationCertPreset = {
   credentials: [
     {
       format: 'vc+sd-jwt',
-      meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+      meta: { vct_values: ['urn:eudi:pid:1'] },
       claim: [
         { path: ['given_name'] },
         { path: ['family_name'] },
@@ -284,7 +286,7 @@ export const credentialPresets = {
   pid: [
     {
       format: 'vc+sd-jwt',
-      meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+      meta: { vct_values: ['urn:eudi:pid:1'] },
       claim: [
         { path: ['given_name'] },
         { path: ['family_name'] },
@@ -296,7 +298,7 @@ export const credentialPresets = {
   ageVerification: [
     {
       format: 'vc+sd-jwt',
-      meta: { vct_values: ['urn:eu.europa.ec.eudi:pid:1'] },
+      meta: { vct_values: ['urn:eudi:pid:1'] },
       claim: [{ path: ['age_over_18'] }],
     },
   ],

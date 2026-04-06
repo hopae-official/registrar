@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { createWRP } from '../api/client';
-import { normalRPPreset } from '../presets/data';
-import type { FormData } from '../utils/rpForm';
-import { emptyForm, presetToForm, formToDto } from '../utils/rpForm';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { registerMediatedRP } from '../../api/client';
+import { normalRPPreset } from '../../presets/data';
+import type { FormData } from '../../utils/rpForm';
+import { emptyForm, presetToForm, formToDto } from '../../utils/rpForm';
 
-export default function RegisterRP() {
+export default function RegisterMediatedRP() {
+  const { id: intermediaryId } = useParams<{ id: string }>();
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -37,7 +38,7 @@ export default function RegisterRP() {
   };
 
   const handleRegister = async () => {
-    if (!token) return;
+    if (!token || !intermediaryId) return;
     if (!validate()) {
       setError('Please fill in all required fields.');
       return;
@@ -46,9 +47,8 @@ export default function RegisterRP() {
     setError('');
     try {
       const dto = formToDto(form);
-      dto.isIntermediary = false;
-      await createWRP(token, dto);
-      navigate('/dashboard');
+      await registerMediatedRP(token, intermediaryId, dto);
+      navigate(`/dashboard/intermediary/${intermediaryId}`);
     } catch (err: any) {
       setError(`Error: ${err.message}`);
     } finally {
@@ -58,9 +58,9 @@ export default function RegisterRP() {
 
   return (
     <div className="page register-page">
-      <h1>Register Relying Party</h1>
+      <h1>Register Mediated Relying Party</h1>
       <p className="subtitle">
-        Fill in your organization details to register as a Relying Party.
+        Register a Relying Party that will use your intermediary services to connect with EUDI Wallets.
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -122,13 +122,6 @@ export default function RegisterRP() {
             </button>
             {advancedOpen && (
               <div className="form-accordion-body">
-                <div className="form-group">
-                  <div className="form-check">
-                    <input type="checkbox" id="isPSB" checked={form.isPSB} onChange={(e) => updateForm('isPSB', e.target.checked)} />
-                    <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
-                  </div>
-                </div>
-                <div className="form-group" />
                 <div className="form-group form-full">
                   <label>Entitlements (one per line)</label>
                   <textarea value={form.entitlement} onChange={(e) => updateForm('entitlement', e.target.value)} rows={2} />
@@ -156,11 +149,11 @@ export default function RegisterRP() {
         </div>
 
         <div className="form-actions">
-          <button className="btn btn-secondary" onClick={() => navigate('/dashboard')} disabled={creating}>
+          <button className="btn btn-secondary" onClick={() => navigate(`/dashboard/intermediary/${intermediaryId}`)} disabled={creating}>
             Cancel
           </button>
           <button className="btn btn-primary" onClick={handleRegister} disabled={creating}>
-            {creating ? 'Registering...' : 'Register Relying Party'}
+            {creating ? 'Registering...' : 'Register Mediated RP'}
           </button>
         </div>
       </div>

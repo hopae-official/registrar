@@ -301,6 +301,37 @@ export class RelyingPartyService {
     this.relyingParties.splice(index, 1);
   }
 
+  // --- Intermediary / Mediated RP queries ---
+
+  findIntermediariesByUser(userId: string) {
+    return this.relyingParties
+      .filter((rp) => rp.ownerId === userId && rp.isIntermediary)
+      .map((rp) => this.toPublicResponse(rp));
+  }
+
+  findMediatedRPs(intermediaryId: string, userId: string) {
+    const intermediary = this.relyingParties.find(
+      (r) => r.id === intermediaryId && r.ownerId === userId,
+    );
+    if (!intermediary) {
+      throw new NotFoundException(
+        `Intermediary with id ${intermediaryId} not found`,
+      );
+    }
+    return this.relyingParties
+      .filter(
+        (rp) =>
+          rp.ownerId === userId &&
+          !rp.isIntermediary &&
+          rp.usesIntermediary?.some((ref) =>
+            ref.identifier.some((refId) =>
+              intermediary.identifier.some((iid) => iid.value === refId.value),
+            ),
+          ),
+      )
+      .map((rp) => this.toPublicResponse(rp));
+  }
+
   // --- Intermediary-RP relationship verification (RPI_07a) ---
 
   verifyIntermediaryRelationship(

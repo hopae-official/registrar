@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { createWRP } from '../api/client';
-import { normalRPPreset } from '../presets/data';
-import type { FormData } from '../utils/rpForm';
-import { emptyForm, presetToForm, formToDto } from '../utils/rpForm';
+import { useAuth } from '../../context/AuthContext';
+import { registerIntermediary } from '../../api/client';
+import { intermediaryPreset } from '../../presets/data';
+import type { FormData } from '../../utils/rpForm';
+import { emptyForm, presetToForm, formToDto } from '../../utils/rpForm';
 
-export default function RegisterRP() {
+export default function RegisterIntermediary() {
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -24,7 +24,7 @@ export default function RegisterRP() {
   };
 
   const demoFill = () => {
-    setForm(presetToForm(normalRPPreset));
+    setForm(presetToForm(intermediaryPreset));
   };
 
   const validate = (): boolean => {
@@ -46,8 +46,8 @@ export default function RegisterRP() {
     setError('');
     try {
       const dto = formToDto(form);
-      dto.isIntermediary = false;
-      await createWRP(token, dto);
+      dto.isIntermediary = true;
+      await registerIntermediary(token, dto);
       navigate('/dashboard');
     } catch (err: any) {
       setError(`Error: ${err.message}`);
@@ -58,9 +58,9 @@ export default function RegisterRP() {
 
   return (
     <div className="page register-page">
-      <h1>Register Relying Party</h1>
+      <h1>Register as Intermediary</h1>
       <p className="subtitle">
-        Fill in your organization details to register as a Relying Party.
+        Register your organization as an intermediary to act on behalf of other Relying Parties.
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -122,13 +122,6 @@ export default function RegisterRP() {
             </button>
             {advancedOpen && (
               <div className="form-accordion-body">
-                <div className="form-group">
-                  <div className="form-check">
-                    <input type="checkbox" id="isPSB" checked={form.isPSB} onChange={(e) => updateForm('isPSB', e.target.checked)} />
-                    <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
-                  </div>
-                </div>
-                <div className="form-group" />
                 <div className="form-group form-full">
                   <label>Entitlements (one per line)</label>
                   <textarea value={form.entitlement} onChange={(e) => updateForm('entitlement', e.target.value)} rows={2} />
@@ -160,7 +153,7 @@ export default function RegisterRP() {
             Cancel
           </button>
           <button className="btn btn-primary" onClick={handleRegister} disabled={creating}>
-            {creating ? 'Registering...' : 'Register Relying Party'}
+            {creating ? 'Registering...' : 'Register Intermediary'}
           </button>
         </div>
       </div>

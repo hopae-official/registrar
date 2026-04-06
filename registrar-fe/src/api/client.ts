@@ -1,4 +1,5 @@
-const BASE = 'https://dev.api.hopae.com/registrar';
+const BASE =
+  import.meta.env.VITE_API_BASE ?? 'https://dev.api.hopae.com/registrar';
 
 function authHeaders(token: string): HeadersInit {
   return {
@@ -51,7 +52,6 @@ function decodeJWSPayload<T>(jws: string): T {
   return JSON.parse(base64UrlDecode(parts[1]));
 }
 
-// WRP public (JWS-signed responses with Content-Type: application/jwt)
 async function requestJWT(url: string): Promise<string> {
   const res = await fetch(BASE + url);
   if (!res.ok) {
@@ -61,26 +61,49 @@ async function requestJWT(url: string): Promise<string> {
   return res.text();
 }
 
+// ============================================================
+// 1. Public Registry
+// ============================================================
+
 export async function listWRPs(params?: Record<string, string>) {
   const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-  const jws = await requestJWT(`/wrp${qs}`);
+  const jws = await requestJWT(`/registry/wrp${qs}`);
   return decodeJWSPayload<{ items: any[]; nextCursor?: string; total: number }>(
     jws,
   );
 }
 
 export async function getWRP(id: string) {
-  const jws = await requestJWT(`/wrp/${id}`);
+  const jws = await requestJWT(`/registry/wrp/${id}`);
   return decodeJWSPayload<any>(jws);
 }
 
-// WRP authenticated
+export function listAccessCerts(rpId: string) {
+  return request<any[]>(`/registry/wrp/${rpId}/access-certs`);
+}
+
+export function getAccessCert(rpId: string, certId: string) {
+  return request<any>(`/registry/wrp/${rpId}/access-certs/${certId}`);
+}
+
+export function listRegistrationCerts(rpId: string) {
+  return request<any[]>(`/registry/wrp/${rpId}/registration-certs`);
+}
+
+export function getRegistrationCert(rpId: string, certId: string) {
+  return request<any>(`/registry/wrp/${rpId}/registration-certs/${certId}`);
+}
+
+// ============================================================
+// 2. WRP Portal
+// ============================================================
+
 export function getMyWRPs(token: string) {
-  return request<any[]>('/wrp/my', { headers: authHeaders(token) });
+  return request<any[]>('/portal/wrp/my', { headers: authHeaders(token) });
 }
 
 export function createWRP(token: string, dto: any) {
-  return request<any>('/wrp', {
+  return request<any>('/portal/wrp', {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify(dto),
@@ -88,7 +111,7 @@ export function createWRP(token: string, dto: any) {
 }
 
 export function updateWRP(token: string, id: string, dto: any) {
-  return request<any>(`/wrp/${id}`, {
+  return request<any>(`/portal/wrp/${id}`, {
     method: 'PUT',
     headers: authHeaders(token),
     body: JSON.stringify(dto),
@@ -96,44 +119,45 @@ export function updateWRP(token: string, id: string, dto: any) {
 }
 
 export function deleteWRP(token: string, id: string) {
-  return request<void>(`/wrp/${id}`, {
+  return request<void>(`/portal/wrp/${id}`, {
     method: 'DELETE',
     headers: authHeaders(token),
   });
 }
 
-// Access certificates
-export function listAccessCerts(rpId: string) {
-  return request<any[]>(`/wrp/${rpId}/access-certs`);
-}
-
-export function createAccessCert(
+export function createAccessCertForWRP(
   token: string,
   rpId: string,
   dto: { publicKey: string; dns?: string[] },
 ) {
-  return request<{ id: string; crt: string }>(`/wrp/${rpId}/access-certs`, {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ ...dto, rpId }),
-  });
+  return request<{ id: string; crt: string }>(
+    `/portal/wrp/${rpId}/access-certs`,
+    {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ ...dto, rpId }),
+    },
+  );
 }
 
-export function revokeAccessCert(token: string, rpId: string, certId: string) {
-  return request<any>(`/wrp/${rpId}/access-certs/${certId}`, {
+export function revokeAccessCertForWRP(
+  token: string,
+  rpId: string,
+  certId: string,
+) {
+  return request<any>(`/portal/wrp/${rpId}/access-certs/${certId}`, {
     method: 'DELETE',
     headers: authHeaders(token),
   });
 }
 
-// Registration certificates
-export function listRegistrationCerts(rpId: string) {
-  return request<any[]>(`/wrp/${rpId}/registration-certs`);
-}
-
-export function createRegistrationCert(token: string, rpId: string, dto: any) {
+export function createRegistrationCertForWRP(
+  token: string,
+  rpId: string,
+  dto: any,
+) {
   return request<{ id: string; jwt: string; intendedUse: any }>(
-    `/wrp/${rpId}/registration-certs`,
+    `/portal/wrp/${rpId}/registration-certs`,
     {
       method: 'POST',
       headers: authHeaders(token),
@@ -142,18 +166,185 @@ export function createRegistrationCert(token: string, rpId: string, dto: any) {
   );
 }
 
-export function revokeRegistrationCert(
+export function revokeRegistrationCertForWRP(
   token: string,
   rpId: string,
   certId: string,
 ) {
-  return request<any>(`/wrp/${rpId}/registration-certs/${certId}`, {
+  return request<any>(`/portal/wrp/${rpId}/registration-certs/${certId}`, {
     method: 'DELETE',
     headers: authHeaders(token),
   });
 }
 
-// Utility: generate EC P-256 key pair in browser
+// ============================================================
+// 3. Intermediary Portal
+// ============================================================
+
+export function getMyIntermediaries(token: string) {
+  return request<any[]>('/portal/intermediary/my', {
+    headers: authHeaders(token),
+  });
+}
+
+export function registerIntermediary(token: string, dto: any) {
+  return request<any>('/portal/intermediary', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
+export function updateIntermediary(token: string, id: string, dto: any) {
+  return request<any>(`/portal/intermediary/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
+export function deleteIntermediary(token: string, id: string) {
+  return request<void>(`/portal/intermediary/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+}
+
+// Intermediary's own access certs
+export function createIntermediaryAccessCert(
+  token: string,
+  intermediaryId: string,
+  dto: { publicKey: string; dns?: string[] },
+) {
+  return request<{ id: string; crt: string }>(
+    `/portal/intermediary/${intermediaryId}/access-certs`,
+    {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify({ ...dto, rpId: intermediaryId }),
+    },
+  );
+}
+
+export function listIntermediaryAccessCerts(
+  token: string,
+  intermediaryId: string,
+) {
+  return request<any[]>(`/portal/intermediary/${intermediaryId}/access-certs`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function revokeIntermediaryAccessCert(
+  token: string,
+  intermediaryId: string,
+  certId: string,
+) {
+  return request<any>(
+    `/portal/intermediary/${intermediaryId}/access-certs/${certId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    },
+  );
+}
+
+// Mediated RPs
+export function listMediatedRPs(token: string, intermediaryId: string) {
+  return request<any[]>(`/portal/intermediary/${intermediaryId}/mediated-rps`, {
+    headers: authHeaders(token),
+  });
+}
+
+export function registerMediatedRP(
+  token: string,
+  intermediaryId: string,
+  dto: any,
+) {
+  return request<any>(`/portal/intermediary/${intermediaryId}/mediated-rps`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(dto),
+  });
+}
+
+export function updateMediatedRP(
+  token: string,
+  intermediaryId: string,
+  rpId: string,
+  dto: any,
+) {
+  return request<any>(
+    `/portal/intermediary/${intermediaryId}/mediated-rps/${rpId}`,
+    {
+      method: 'PUT',
+      headers: authHeaders(token),
+      body: JSON.stringify(dto),
+    },
+  );
+}
+
+export function deleteMediatedRP(
+  token: string,
+  intermediaryId: string,
+  rpId: string,
+) {
+  return request<void>(
+    `/portal/intermediary/${intermediaryId}/mediated-rps/${rpId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    },
+  );
+}
+
+// Mediated RP registration certs
+export function listMediatedRPRegCerts(
+  token: string,
+  intermediaryId: string,
+  rpId: string,
+) {
+  return request<any[]>(
+    `/portal/intermediary/${intermediaryId}/mediated-rps/${rpId}/registration-certs`,
+    { headers: authHeaders(token) },
+  );
+}
+
+export function createMediatedRPRegCert(
+  token: string,
+  intermediaryId: string,
+  rpId: string,
+  dto: any,
+) {
+  return request<{ id: string; jwt: string; intendedUse: any }>(
+    `/portal/intermediary/${intermediaryId}/mediated-rps/${rpId}/registration-certs`,
+    {
+      method: 'POST',
+      headers: authHeaders(token),
+      body: JSON.stringify(dto),
+    },
+  );
+}
+
+export function revokeMediatedRPRegCert(
+  token: string,
+  intermediaryId: string,
+  rpId: string,
+  certId: string,
+) {
+  return request<any>(
+    `/portal/intermediary/${intermediaryId}/mediated-rps/${rpId}/registration-certs/${certId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    },
+  );
+}
+
+// ============================================================
+// Utility
+// ============================================================
+
 export async function generateECP256KeyPair(): Promise<string> {
   const keyPair = await window.crypto.subtle.generateKey(
     { name: 'ECDSA', namedCurve: 'P-256' },

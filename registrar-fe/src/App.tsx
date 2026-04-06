@@ -4,11 +4,15 @@ import Header from './components/Header';
 import Home from './pages/Home';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import RegisterRP from './pages/RegisterRP';
 import RPDetail from './pages/RPDetail';
 import RPPublicDetail from './pages/RPPublicDetail';
-import BecomeIntermediary from './pages/BecomeIntermediary';
+import RegisterIntermediary from './pages/intermediary/RegisterIntermediary';
+import IntermediaryDashboard from './pages/intermediary/IntermediaryDashboard';
+import RegisterMediatedRP from './pages/intermediary/RegisterMediatedRP';
+import MediatedRPDetail from './pages/intermediary/MediatedRPDetail';
 
 function Footer() {
   return (
@@ -52,14 +56,25 @@ export default function App() {
           <Header />
           <main className="main">
             <Routes>
+              {/* Public */}
               <Route path="/" element={<Home />} />
+              <Route path="/rp/:id" element={<RPPublicDetail />} />
               <Route path="/sign-in" element={<SignIn />} />
               <Route path="/sign-up" element={<SignUp />} />
+
+              {/* Onboarding */}
+              <Route path="/onboarding" element={<Onboarding />} />
+
+              {/* WRP Portal */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/register" element={<RegisterRP />} />
               <Route path="/dashboard/rp/:id" element={<RPDetail />} />
-              <Route path="/dashboard/rp/:id/become-intermediary" element={<BecomeIntermediary />} />
-              <Route path="/rp/:id" element={<RPPublicDetail />} />
+
+              {/* Intermediary Portal */}
+              <Route path="/dashboard/register-intermediary" element={<RegisterIntermediary />} />
+              <Route path="/dashboard/intermediary/:id" element={<IntermediaryDashboard />} />
+              <Route path="/dashboard/intermediary/:id/register-rp" element={<RegisterMediatedRP />} />
+              <Route path="/dashboard/intermediary/:id/rp/:rpId" element={<MediatedRPDetail />} />
             </Routes>
           </main>
           <Footer />

@@ -256,7 +256,7 @@ export default function SignUp() {
             <p>This is a demo &mdash; skip the review process.</p>
             <button
               className="btn btn-primary btn-full"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/onboarding')}
             >
               Proceed to Dashboard
             </button>
