@@ -189,6 +189,14 @@ export default function IntermediaryDashboard() {
           </div>
         </div>
         <div className="detail-header-actions">
+          <a
+            href="https://dev.api.hopae.com/registrar/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary"
+          >
+            API Docs
+          </a>
           <button className="btn btn-danger" onClick={handleDelete}>Delete Intermediary</button>
         </div>
       </div>
