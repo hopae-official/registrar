@@ -117,60 +117,68 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Intermediary view — show each intermediary with its mediated RPs inline */}
+      {/* Intermediary view */}
       {!loading && intermediaries.map((int: any) => {
         const mediated = mediatedRPsByIntermediary[int.id] ?? [];
         return (
-          <section className="section" key={int.id}>
-            <div className="section-header">
-              <div>
-                <h2>{int.tradeName || int.legalName}</h2>
-                <div className="rp-tags" style={{ marginTop: 4 }}>
-                  <span className="tag tag-blue">Intermediary</span>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {int.identifier?.[0]?.value}
-                  </span>
+          <div key={int.id}>
+            {/* 상단: Intermediary 정보 + Manage */}
+            <section className="section">
+              <div className="section-header">
+                <div>
+                  <h2>{int.tradeName || int.legalName}</h2>
+                  <div className="rp-tags" style={{ marginTop: 4 }}>
+                    <span className="tag tag-blue">Intermediary</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      {int.identifier?.[0]?.value}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
                 <Link to={`/dashboard/intermediary/${int.id}`} className="btn btn-secondary btn-sm">
                   Manage
                 </Link>
+              </div>
+            </section>
+
+            {/* 하단: Mediated RP 목록 */}
+            <section className="section">
+              <div className="section-header">
+                <h2>Mediated Relying Parties</h2>
                 <Link to={`/dashboard/intermediary/${int.id}/register-rp`} className="btn btn-primary btn-sm">
                   Register Mediated RP
                 </Link>
               </div>
-            </div>
 
-            {mediated.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">&#128203;</div>
-                <p className="empty-state-title">No Mediated RPs Yet</p>
-                <p className="empty-state-desc">
-                  Register Relying Parties that will use your intermediary services.
-                </p>
-                <Link to={`/dashboard/intermediary/${int.id}/register-rp`} className="btn btn-primary">
-                  Register Mediated RP
-                </Link>
-              </div>
-            ) : (
-              <div className="rp-grid">
-                {mediated.map((rp: any) => (
-                  <Link to={`/dashboard/intermediary/${int.id}/rp/${rp.id}`} key={rp.id} className="rp-card">
-                    <h3>{rp.tradeName || rp.legalName || 'Unnamed'}</h3>
-                    {rp.legalName && rp.tradeName && <p className="legal-name">{rp.legalName}</p>}
-                    <div className="rp-tags">
-                      <span className="tag tag-purple">Mediated RP</span>
-                    </div>
-                    <p className="rp-desc">{rp.srvDescription?.[0]?.content?.slice(0, 100)}...</p>
-                    <div className="rp-stats">
-                      <span>Reg Certs: {rp.registrationCertificates?.length ?? 0}</span>
-                    </div>
+              {mediated.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">&#128203;</div>
+                  <p className="empty-state-title">No Mediated RPs Yet</p>
+                  <p className="empty-state-desc">
+                    Register Relying Parties that will use your intermediary services.
+                  </p>
+                  <Link to={`/dashboard/intermediary/${int.id}/register-rp`} className="btn btn-primary">
+                    Register Mediated RP
                   </Link>
-                ))}
-              </div>
-            )}
-          </section>
+                </div>
+              ) : (
+                <div className="rp-grid">
+                  {mediated.map((rp: any) => (
+                    <Link to={`/dashboard/intermediary/${int.id}/rp/${rp.id}`} key={rp.id} className="rp-card">
+                      <h3>{rp.tradeName || rp.legalName || 'Unnamed'}</h3>
+                      {rp.legalName && rp.tradeName && <p className="legal-name">{rp.legalName}</p>}
+                      <div className="rp-tags">
+                        <span className="tag tag-purple">Mediated RP</span>
+                      </div>
+                      <p className="rp-desc">{rp.srvDescription?.[0]?.content?.slice(0, 100)}...</p>
+                      <div className="rp-stats">
+                        <span>Reg Certs: {rp.registrationCertificates?.length ?? 0}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
         );
       })}
     </div>
