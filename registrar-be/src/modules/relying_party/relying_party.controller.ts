@@ -79,6 +79,33 @@ export class RelyingPartyController {
     res.type('application/jwt').send(jws);
   }
 
+  @Get('verify-intermediary')
+  @ApiOperation({
+    summary:
+      'Verify that an intermediary-RP relationship is registered (RPI_07a)',
+  })
+  @ApiProduces('application/jwt')
+  @ApiResponse({
+    status: 200,
+    description:
+      'JWS-signed result indicating whether the relationship is registered',
+  })
+  async verifyIntermediary(
+    @Query('rp') rpIdentifier: string,
+    @Query('intermediary') intermediaryIdentifier: string,
+    @Res() res: FastifyReply,
+  ) {
+    const verified = this.relyingPartyService.verifyIntermediaryRelationship(
+      rpIdentifier,
+      intermediaryIdentifier,
+    );
+    const jws = await this.cryptoService.signJWT(
+      { rp: rpIdentifier, intermediary: intermediaryIdentifier, verified },
+      { typ: 'wrp-registry+jwt' },
+    );
+    res.type('application/jwt').send(jws);
+  }
+
   @UseGuards(JwtGuard)
   @Get('my')
   @ApiBearerAuth()

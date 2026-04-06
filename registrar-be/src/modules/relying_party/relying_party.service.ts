@@ -301,6 +301,26 @@ export class RelyingPartyService {
     this.relyingParties.splice(index, 1);
   }
 
+  // --- Intermediary-RP relationship verification (RPI_07a) ---
+
+  verifyIntermediaryRelationship(
+    rpIdentifier: string,
+    intermediaryIdentifier: string,
+  ): boolean {
+    const rp = this.relyingParties.find(
+      (r) =>
+        r.identifier.some((id) => id.value === rpIdentifier) ||
+        r.id === rpIdentifier,
+    );
+    if (!rp) return false;
+
+    return (
+      rp.usesIntermediary?.some((ref) =>
+        ref.identifier.some((id) => id.value === intermediaryIdentifier),
+      ) ?? false
+    );
+  }
+
   // --- Certificate management (stored in the same RP object) ---
 
   addAccessCertificate(

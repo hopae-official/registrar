@@ -25,6 +25,16 @@ export class RegistrationCertService {
       );
     }
 
+    // ETSI TS 119 475 Table 7 NOTE 4: WRPRCs are not issued for WRPs
+    // registered solely for the purpose of acting as an intermediary.
+    // WRPRC subject is always the final RP, never the intermediary itself.
+    if (rp.isIntermediary) {
+      throw new BadRequestException(
+        'Registration certificates cannot be issued for WRPs registered as an intermediary. ' +
+          'Issue the WRPRC under the mediated Relying Party instead.',
+      );
+    }
+
     const distinguishedName = this.relyingPartyService.getUniqueIdentifier(rp);
     const jti = randomUUID();
     const host = this.configService.get<string>(
@@ -60,7 +70,7 @@ export class RegistrationCertService {
       info_uri: rp.infoURI?.[0] ?? host,
     };
 
-    // Handle intermediary reference
+    // Handle intermediary reference (ETSI TS 119 475, Table 10)
     if (dto.intermediary) {
       const intermediary = this.relyingPartyService.getById(dto.intermediary);
       if (!intermediary) {
@@ -68,9 +78,9 @@ export class RegistrationCertService {
           `Intermediary with id ${dto.intermediary} not found`,
         );
       }
-      payload.act = {
-        id: this.relyingPartyService.getUniqueIdentifier(intermediary),
-        name: intermediary.tradeName ?? intermediary.legalName ?? '',
+      payload.intermediary = {
+        sub: this.relyingPartyService.getUniqueIdentifier(intermediary),
+        sname: intermediary.tradeName ?? intermediary.legalName ?? '',
       };
     }
 
