@@ -64,7 +64,12 @@ async function bootstrap() {
     },
   );
 
-  app.enableCors();
+  app.enableCors({
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
   const port = process.env.PORT ?? 18000;
   await app.listen(port, '0.0.0.0');
   const logger = app.get(Logger);
