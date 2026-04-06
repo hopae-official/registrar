@@ -8,7 +8,7 @@ export const demoUsers = [
     email: 'admin@hopae.com',
     password: 'demo1234',
     name: 'Alice Kim',
-    company: 'Hopae S.àr.l.',
+    company: 'Hopae Inc.',
   },
   {
     label: 'SmartID Admin',
@@ -16,27 +16,27 @@ export const demoUsers = [
     email: 'admin@smartid.com',
     password: 'demo1234',
     name: 'Bob Martin',
-    company: 'SmartID Services S.àr.l.',
+    company: 'SmartID Services Inc.',
   },
   {
-    label: 'LuxBank Admin',
+    label: 'DemoBank Admin',
     description: 'Normal RP operator',
-    email: 'admin@luxbank.com',
+    email: 'admin@demobank.com',
     password: 'demo1234',
     name: 'Claire Dupont',
-    company: 'LuxBank S.A.',
+    company: 'DemoBank Corp.',
   },
 ];
 
 // --- RP Presets ---
 
 export const intermediaryPreset = {
-  legalName: 'Hopae S.àr.l.',
+  legalName: 'Hopae Inc.',
   tradeName: 'Hopae',
-  identifier: [{ type: 'EUID', value: 'LULUX.12345678' }],
+  identifier: [{ type: 'EUID', value: 'DEMO.12345678' }],
   infoURI: ['https://hopae.com'],
   email: 'contact@hopae.com',
-  phone: '+352-26-10-00-01',
+  phone: '+1-555-100-0001',
   supportURI: ['https://support.hopae.com'],
   srvDescription: [
     {
@@ -67,22 +67,22 @@ export const intermediaryPreset = {
   isPSB: false,
   entitlement: ['https://uri.etsi.org/19475/Entitlement/Service_Provider'],
   supervisoryAuthority: {
-    legalName: 'CNPD',
-    email: 'info@cnpd.lu',
-    phone: '+352-26-10-60-1',
-    infoURI: ['https://cnpd.public.lu'],
+    legalName: 'Demo Authority',
+    email: 'info@demo-authority.example.com',
+    phone: '+1-555-100-0060',
+    infoURI: ['https://demo-authority.example.com'],
   },
   isIntermediary: true,
 };
 
 export const normalRPPreset = {
-  legalName: 'LuxBank S.A.',
-  tradeName: 'LuxBank',
-  identifier: [{ type: 'EUID', value: 'LULUX.87654321' }],
-  infoURI: ['https://luxbank.lu'],
-  email: 'contact@luxbank.lu',
-  phone: '+352-26-25-00-00',
-  supportURI: ['https://support.luxbank.lu'],
+  legalName: 'DemoBank Corp.',
+  tradeName: 'DemoBank',
+  identifier: [{ type: 'EUID', value: 'DEMO.87654321' }],
+  infoURI: ['https://demobank.example.com'],
+  email: 'contact@demobank.example.com',
+  phone: '+1-555-250-0000',
+  supportURI: ['https://support.demobank.example.com'],
   srvDescription: [
     {
       lang: 'en',
@@ -99,7 +99,7 @@ export const normalRPPreset = {
             'Customer onboarding and KYC verification for banking services',
         },
       ],
-      privacyPolicy: [{ type: 'text/html', uri: 'https://luxbank.lu/privacy' }],
+      privacyPolicy: [{ type: 'text/html', uri: 'https://demobank.example.com/privacy' }],
       credential: [
         {
           format: 'vc+sd-jwt',
@@ -117,10 +117,10 @@ export const normalRPPreset = {
   isPSB: false,
   entitlement: ['https://uri.etsi.org/19475/Entitlement/Service_Provider'],
   supervisoryAuthority: {
-    legalName: 'CSSF',
-    email: 'info@cssf.lu',
-    phone: '+352-26-25-1-1',
-    infoURI: ['https://www.cssf.lu'],
+    legalName: 'Demo Financial Authority',
+    email: 'info@demo-fin-authority.example.com',
+    phone: '+1-555-250-0011',
+    infoURI: ['https://demo-fin-authority.example.com'],
   },
   isIntermediary: false,
 };
@@ -131,13 +131,13 @@ export function rpWithIntermediaryPreset(intermediary: {
   registryURI: string;
 }) {
   return {
-    legalName: 'SmartID Services S.àr.l.',
+    legalName: 'SmartID Services Inc.',
     tradeName: 'SmartID',
-    identifier: [{ type: 'EUID', value: 'LULUX.11223344' }],
-    infoURI: ['https://smartid.lu'],
-    email: 'contact@smartid.lu',
-    phone: '+352-26-30-00-00',
-    supportURI: ['https://support.smartid.lu'],
+    identifier: [{ type: 'EUID', value: 'DEMO.11223344' }],
+    infoURI: ['https://smartid.example.com'],
+    email: 'contact@smartid.example.com',
+    phone: '+1-555-300-0000',
+    supportURI: ['https://support.smartid.example.com'],
     srvDescription: [
       {
         lang: 'en',
@@ -154,7 +154,7 @@ export function rpWithIntermediaryPreset(intermediary: {
           },
         ],
         privacyPolicy: [
-          { type: 'text/html', uri: 'https://smartid.lu/privacy' },
+          { type: 'text/html', uri: 'https://smartid.example.com/privacy' },
         ],
         credential: [
           {
@@ -168,10 +168,10 @@ export function rpWithIntermediaryPreset(intermediary: {
     isPSB: false,
     entitlement: ['https://uri.etsi.org/19475/Entitlement/Service_Provider'],
     supervisoryAuthority: {
-      legalName: 'CNPD',
-      email: 'info@cnpd.lu',
-      phone: '+352-26-10-60-1',
-      infoURI: ['https://cnpd.public.lu'],
+      legalName: 'Demo Authority',
+      email: 'info@demo-authority.example.com',
+      phone: '+1-555-100-0060',
+      infoURI: ['https://demo-authority.example.com'],
     },
     isIntermediary: false,
     usesIntermediary: [
@@ -261,8 +261,8 @@ export const dummyIntermediaries = [
 // --- Certificate Presets ---
 
 export const registrationCertPreset = {
-  support_uri: 'https://support.example.lu',
-  privacy_policy: 'https://example.lu/privacy-policy',
+  support_uri: 'https://support.example.com',
+  privacy_policy: 'https://example.com/privacy-policy',
   purpose: [
     { lang: 'en', content: 'Identity verification for service access' },
   ],
@@ -303,5 +303,5 @@ export const credentialPresets = {
 };
 
 export const accessCertPreset = {
-  dns: ['verify.hopae.com', 'api.example.lu'],
+  dns: ['verify.hopae.com', 'api.example.com'],
 };

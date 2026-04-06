@@ -559,7 +559,7 @@ export default function RPDetail() {
                 <input
                   value={accessDns}
                   onChange={(e) => setAccessDns(e.target.value)}
-                  placeholder="verify.hopae.com, api.example.lu"
+                  placeholder="verify.hopae.com, api.example.com"
                 />
               </div>
               <div className="form-group form-full">

@@ -34,20 +34,10 @@ function Footer() {
             <a href="https://ec.europa.eu/digital-building-blocks/sites/display/EUDIGITALIDENTITYWALLET" target="_blank" rel="noopener noreferrer">
               EUDI Wallet
             </a>
-            <a href="https://guichet.public.lu" target="_blank" rel="noopener noreferrer">
-              Guichet.lu
-            </a>
           </div>
         </div>
       </div>
       <div className="footer-bottom">
-        <div className="lux-flag">
-          <div className="lux-flag-bars">
-            <div className="lux-flag-bar" style={{ background: '#ef4135' }} />
-            <div className="lux-flag-bar" style={{ background: '#ffffff' }} />
-            <div className="lux-flag-bar" style={{ background: '#00a3e0' }} />
-          </div>
-        </div>
         <span>EUDI Wallet Registrar &mdash; Demo</span>
       </div>
     </footer>

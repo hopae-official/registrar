@@ -7,11 +7,11 @@ export default function Header() {
 
   return (
     <div className="header-wrap">
-      <div className="lux-stripe" />
+      <div className="accent-stripe" />
       <header className="header">
         <div className="header-inner">
           <Link to="/" className="logo">
-            <div className="logo-shield">LU</div>
+            <div className="logo-shield">EU</div>
             <div className="logo-text">
               <span className="logo-title">Wallet RP Registrar</span>
             </div>

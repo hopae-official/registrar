@@ -23,8 +23,8 @@
   --color-green: #2f9e44;
   --color-purple: #7950f2;
   --color-red: #c41e3a;
-  --color-lux-red: #ef4135;
-  --color-lux-blue: #00a3e0;
+  --color-accent-blue: #003399;
+  --color-accent-gold: #ffcc00;
   --radius: 6px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -39,10 +39,10 @@ body {
   min-height: 100vh;
 }
 
-/* Luxembourg flag accent stripe */
-.lux-stripe {
+/* EU accent stripe */
+.accent-stripe {
   height: 4px;
-  background: linear-gradient(to right, var(--color-lux-red) 33.33%, #ffffff 33.33%, #ffffff 66.66%, var(--color-lux-blue) 66.66%);
+  background: linear-gradient(to right, var(--color-accent-blue) 50%, var(--color-accent-gold) 50%);
 }
 
 /* Header */
@@ -911,7 +911,7 @@ body {
   left: 0;
   right: 0;
   height: 10px;
-  background: linear-gradient(to right, var(--color-lux-red) 33.33%, #ffffff 33.33%, #ffffff 66.66%, var(--color-lux-blue) 66.66%);
+  background: linear-gradient(to right, var(--color-accent-blue) 50%, var(--color-accent-gold) 50%);
 }
 
 .hero-inner {
@@ -1021,22 +1021,6 @@ body {
   font-size: 12px;
 }
 
-.footer-bottom .lux-flag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.footer-bottom .lux-flag-bars {
-  display: flex;
-  gap: 2px;
-}
-
-.footer-bottom .lux-flag-bar {
-  width: 12px;
-  height: 8px;
-  border-radius: 1px;
-}
 
 /* App layout for footer push */
 .app-layout {
