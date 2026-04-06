@@ -1,4 +1,4 @@
-const BASE = 'https://registrar-api.dev.hopae.app';
+const BASE = 'https://dev.api.hopae.com/registrar';
 
 function authHeaders(token: string): HeadersInit {
   return {
