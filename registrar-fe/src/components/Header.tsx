@@ -17,6 +17,13 @@ export default function Header() {
             </div>
           </Link>
           <nav className="header-nav">
+            <a
+              href="https://dev.api.hopae.com/registrar/api"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              API Docs
+            </a>
             <Link to="/">Registry</Link>
             {token && <Link to="/dashboard">Dashboard</Link>}
           </nav>
