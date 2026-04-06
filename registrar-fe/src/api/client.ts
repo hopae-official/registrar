@@ -8,6 +8,12 @@ function authHeaders(token: string): HeadersInit {
   };
 }
 
+function authHeadersNoBody(token: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + url, init);
   if (!res.ok) {
@@ -121,7 +127,7 @@ export function updateWRP(token: string, id: string, dto: any) {
 export function deleteWRP(token: string, id: string) {
   return request<void>(`/portal/wrp/${id}`, {
     method: 'DELETE',
-    headers: authHeaders(token),
+    headers: authHeadersNoBody(token),
   });
 }
 
@@ -147,7 +153,7 @@ export function revokeAccessCertForWRP(
 ) {
   return request<any>(`/portal/wrp/${rpId}/access-certs/${certId}`, {
     method: 'DELETE',
-    headers: authHeaders(token),
+    headers: authHeadersNoBody(token),
   });
 }
 
@@ -173,7 +179,7 @@ export function revokeRegistrationCertForWRP(
 ) {
   return request<any>(`/portal/wrp/${rpId}/registration-certs/${certId}`, {
     method: 'DELETE',
-    headers: authHeaders(token),
+    headers: authHeadersNoBody(token),
   });
 }
 
@@ -206,7 +212,7 @@ export function updateIntermediary(token: string, id: string, dto: any) {
 export function deleteIntermediary(token: string, id: string) {
   return request<void>(`/portal/intermediary/${id}`, {
     method: 'DELETE',
-    headers: authHeaders(token),
+    headers: authHeadersNoBody(token),
   });
 }
 
