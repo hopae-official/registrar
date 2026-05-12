@@ -139,4 +139,4 @@ registrar/
 
 ## License
 
-[MIT](LICENSE)
+Apache 2.0
