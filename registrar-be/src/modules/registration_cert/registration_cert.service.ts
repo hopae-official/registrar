@@ -18,7 +18,7 @@ export class RegistrationCertService {
   ) {}
 
   async create(dto: RegistrationCertificateCreationDto) {
-    const rp = this.relyingPartyService.getById(dto.rpId);
+    const rp = await this.relyingPartyService.getById(dto.rpId);
     if (!rp) {
       throw new NotFoundException(
         `Relying party with id ${dto.rpId} not found`,
@@ -72,7 +72,9 @@ export class RegistrationCertService {
 
     // Handle intermediary reference (ETSI TS 119 475, Table 10)
     if (dto.intermediary) {
-      const intermediary = this.relyingPartyService.getById(dto.intermediary);
+      const intermediary = await this.relyingPartyService.getById(
+        dto.intermediary,
+      );
       if (!intermediary) {
         throw new NotFoundException(
           `Intermediary with id ${dto.intermediary} not found`,
@@ -90,7 +92,7 @@ export class RegistrationCertService {
     });
 
     // Store in RP object
-    const entry = this.relyingPartyService.addRegistrationCertificate(
+    const entry = await this.relyingPartyService.addRegistrationCertificate(
       dto.rpId,
       {
         id: jti,
@@ -106,8 +108,9 @@ export class RegistrationCertService {
     return this.relyingPartyService.getRegistrationCertificates(rpId);
   }
 
-  findOne(rpId: string, certId: string) {
-    const certs = this.relyingPartyService.getRegistrationCertificates(rpId);
+  async findOne(rpId: string, certId: string) {
+    const certs =
+      await this.relyingPartyService.getRegistrationCertificates(rpId);
     const cert = certs.find((c) => c.id === certId);
     if (!cert) {
       throw new NotFoundException(
@@ -117,8 +120,8 @@ export class RegistrationCertService {
     return cert;
   }
 
-  revoke(rpId: string, certId: string) {
-    const cert = this.findOne(rpId, certId);
+  async revoke(rpId: string, certId: string) {
+    const cert = await this.findOne(rpId, certId);
     if (cert.revokedAt) {
       throw new BadRequestException('Certificate is already revoked');
     }

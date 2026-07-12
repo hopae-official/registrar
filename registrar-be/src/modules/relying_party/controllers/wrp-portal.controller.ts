@@ -38,8 +38,8 @@ export class WrpPortalController {
   @Get('my')
   @ApiOperation({ summary: 'List WRPs owned by the authenticated user (non-intermediary)' })
   @ApiResponse({ status: 200, description: 'List of own WRPs' })
-  findMy(@AuthenticatedUser() user: AuthPayload) {
-    const all = this.rpService.findAllByUser(user.sub);
+  async findMy(@AuthenticatedUser() user: AuthPayload) {
+    const all = await this.rpService.findAllByUser(user.sub);
     return all.filter((rp: any) => !rp.isIntermediary);
   }
 

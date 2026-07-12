@@ -2,8 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import { and, eq } from 'drizzle-orm';
+import { DRIZZLE, type DrizzleDb } from '../../db/drizzle.module';
+import { relyingParties as rpTable } from '../../db/schema';
 import {
   WalletRelyingParty,
   CreateRelyingPartyDto,
@@ -17,7 +21,55 @@ import {
 
 @Injectable()
 export class RelyingPartyService {
-  private relyingParties: WalletRelyingParty[] = [];
+  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
+
+  // --- Postgres-backed persistence (the RP is stored as a jsonb `data` blob) ---
+
+  private async all(): Promise<WalletRelyingParty[]> {
+    const rows = await this.db.select().from(rpTable);
+    return rows.map((r) => r.data);
+  }
+
+  private async byOwner(ownerId: string): Promise<WalletRelyingParty[]> {
+    const rows = await this.db
+      .select()
+      .from(rpTable)
+      .where(eq(rpTable.ownerId, ownerId));
+    return rows.map((r) => r.data);
+  }
+
+  private async byId(id: string): Promise<WalletRelyingParty | undefined> {
+    const rows = await this.db
+      .select()
+      .from(rpTable)
+      .where(eq(rpTable.id, id))
+      .limit(1);
+    return rows[0]?.data;
+  }
+
+  private async persist(rp: WalletRelyingParty): Promise<void> {
+    await this.db
+      .insert(rpTable)
+      .values({
+        id: rp.id,
+        ownerId: rp.ownerId,
+        isIntermediary: rp.isIntermediary ?? false,
+        data: rp,
+      })
+      .onConflictDoUpdate({
+        target: rpTable.id,
+        set: {
+          data: rp,
+          ownerId: rp.ownerId,
+          isIntermediary: rp.isIntermediary ?? false,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  private async remove(id: string): Promise<void> {
+    await this.db.delete(rpTable).where(eq(rpTable.id, id));
+  }
 
   private toPublicResponse(rp: WalletRelyingParty) {
     // Per TS5 spec: exclude physicalAddress from public responses
@@ -25,16 +77,16 @@ export class RelyingPartyService {
     return publicData;
   }
 
-  getById(id: string): WalletRelyingParty | undefined {
-    return this.relyingParties.find((rp) => rp.id === id);
+  async getById(id: string): Promise<WalletRelyingParty | undefined> {
+    return this.byId(id);
   }
 
   getUniqueIdentifier(rp: WalletRelyingParty): string {
     return rp.id;
   }
 
-  findAll(query: SearchRelyingPartyQueryDto) {
-    let results = [...this.relyingParties];
+  async findAll(query: SearchRelyingPartyQueryDto) {
+    let results = await this.all();
 
     if (query.identifier) {
       results = results.filter((rp) =>
@@ -155,8 +207,9 @@ export class RelyingPartyService {
     };
   }
 
-  findOne(identifier: string) {
-    const rp = this.relyingParties.find(
+  async findOne(identifier: string) {
+    const all = await this.all();
+    const rp = all.find(
       (rp) =>
         rp.identifier.some((id) => id.value === identifier) ||
         rp.id === identifier,
@@ -169,14 +222,14 @@ export class RelyingPartyService {
     return this.toPublicResponse(rp);
   }
 
-  findAllByUser(userId: string) {
-    return this.relyingParties
-      .filter((rp) => rp.ownerId === userId)
-      .map((rp) => this.toPublicResponse(rp));
+  async findAllByUser(userId: string) {
+    const rps = await this.byOwner(userId);
+    return rps.map((rp) => this.toPublicResponse(rp));
   }
 
-  checkIntendedUse(query: CheckIntendedUseQueryDto): IntendedUse {
-    const rp = this.relyingParties.find((r) =>
+  async checkIntendedUse(query: CheckIntendedUseQueryDto): Promise<IntendedUse> {
+    const all = await this.all();
+    const rp = all.find((r) =>
       r.identifier.some((id) => id.value === query.identifier),
     );
     if (!rp?.intendedUse) throw new NotFoundException('Not found');
@@ -223,7 +276,10 @@ export class RelyingPartyService {
     return iu;
   }
 
-  create(dto: CreateRelyingPartyDto, ownerId: string): WalletRelyingParty {
+  async create(
+    dto: CreateRelyingPartyDto,
+    ownerId: string,
+  ): Promise<WalletRelyingParty> {
     const id = randomUUID();
     const registryURI = `/wrp/${id}`;
 
@@ -244,21 +300,20 @@ export class RelyingPartyService {
       registrationCertificates: [],
     };
 
-    this.relyingParties.push(rp);
+    await this.persist(rp);
     return rp;
   }
 
-  update(
+  async update(
     id: string,
     dto: UpdateRelyingPartyDto,
     ownerId: string,
-  ): WalletRelyingParty {
-    const index = this.relyingParties.findIndex((rp) => rp.id === id);
-    if (index === -1) {
+  ): Promise<WalletRelyingParty> {
+    const rp = await this.byId(id);
+    if (!rp) {
       throw new NotFoundException(`Relying party with id ${id} not found`);
     }
 
-    const rp = this.relyingParties[index];
     if (rp.ownerId !== ownerId) {
       throw new ForbiddenException(
         'Not authorized to update this relying party',
@@ -281,47 +336,48 @@ export class RelyingPartyService {
       intendedUse,
     };
 
-    this.relyingParties[index] = updated;
+    await this.persist(updated);
     return updated;
   }
 
-  delete(id: string, ownerId: string): void {
-    const index = this.relyingParties.findIndex((rp) => rp.id === id);
-    if (index === -1) {
+  async delete(id: string, ownerId: string): Promise<void> {
+    const rp = await this.byId(id);
+    if (!rp) {
       throw new NotFoundException(`Relying party with id ${id} not found`);
     }
 
-    const rp = this.relyingParties[index];
     if (rp.ownerId !== ownerId) {
       throw new ForbiddenException(
         'Not authorized to delete this relying party',
       );
     }
 
-    this.relyingParties.splice(index, 1);
+    await this.remove(id);
   }
 
   // --- Intermediary / Mediated RP queries ---
 
-  findIntermediariesByUser(userId: string) {
-    return this.relyingParties
-      .filter((rp) => rp.ownerId === userId && rp.isIntermediary)
-      .map((rp) => this.toPublicResponse(rp));
+  async findIntermediariesByUser(userId: string) {
+    const rows = await this.db
+      .select()
+      .from(rpTable)
+      .where(
+        and(eq(rpTable.ownerId, userId), eq(rpTable.isIntermediary, true)),
+      );
+    return rows.map((r) => this.toPublicResponse(r.data));
   }
 
-  findMediatedRPs(intermediaryId: string, userId: string) {
-    const intermediary = this.relyingParties.find(
-      (r) => r.id === intermediaryId && r.ownerId === userId,
-    );
+  async findMediatedRPs(intermediaryId: string, userId: string) {
+    const owned = await this.byOwner(userId);
+    const intermediary = owned.find((r) => r.id === intermediaryId);
     if (!intermediary) {
       throw new NotFoundException(
         `Intermediary with id ${intermediaryId} not found`,
       );
     }
-    return this.relyingParties
+    return owned
       .filter(
         (rp) =>
-          rp.ownerId === userId &&
           !rp.isIntermediary &&
           rp.usesIntermediary?.some((ref) =>
             ref.identifier.some((refId) =>
@@ -334,11 +390,12 @@ export class RelyingPartyService {
 
   // --- Intermediary-RP relationship verification (RPI_07a) ---
 
-  verifyIntermediaryRelationship(
+  async verifyIntermediaryRelationship(
     rpIdentifier: string,
     intermediaryIdentifier: string,
-  ): boolean {
-    const rp = this.relyingParties.find(
+  ): Promise<boolean> {
+    const all = await this.all();
+    const rp = all.find(
       (r) =>
         r.identifier.some((id) => id.value === rpIdentifier) ||
         r.id === rpIdentifier,
@@ -354,11 +411,11 @@ export class RelyingPartyService {
 
   // --- Certificate management (stored in the same RP object) ---
 
-  addAccessCertificate(
+  async addAccessCertificate(
     rpId: string,
     entry: Omit<AccessCertificateEntry, 'issuedAt'>,
-  ): AccessCertificateEntry {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  ): Promise<AccessCertificateEntry> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
@@ -367,33 +424,34 @@ export class RelyingPartyService {
       issuedAt: new Date().toISOString(),
     };
     rp.accessCertificates.push(certEntry);
+    await this.persist(rp);
     return certEntry;
   }
 
-  getAccessCertificates(rpId: string): AccessCertificateEntry[] {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  async getAccessCertificates(rpId: string): Promise<AccessCertificateEntry[]> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
     return rp.accessCertificates;
   }
 
-  findAccessCertificate(
+  async findAccessCertificate(
     rpId: string,
     certId: string,
-  ): AccessCertificateEntry | undefined {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  ): Promise<AccessCertificateEntry | undefined> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
     return rp.accessCertificates.find((c) => c.id === certId);
   }
 
-  revokeAccessCertificate(
+  async revokeAccessCertificate(
     rpId: string,
     certId: string,
-  ): AccessCertificateEntry {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  ): Promise<AccessCertificateEntry> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
@@ -402,14 +460,15 @@ export class RelyingPartyService {
       throw new NotFoundException(`Access certificate ${certId} not found`);
     }
     cert.revokedAt = new Date().toISOString();
+    await this.persist(rp);
     return cert;
   }
 
-  addRegistrationCertificate(
+  async addRegistrationCertificate(
     rpId: string,
     entry: Omit<RegistrationCertificateEntry, 'issuedAt'>,
-  ): RegistrationCertificateEntry {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  ): Promise<RegistrationCertificateEntry> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
@@ -418,22 +477,25 @@ export class RelyingPartyService {
       issuedAt: new Date().toISOString(),
     };
     rp.registrationCertificates.push(certEntry);
+    await this.persist(rp);
     return certEntry;
   }
 
-  getRegistrationCertificates(rpId: string): RegistrationCertificateEntry[] {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  async getRegistrationCertificates(
+    rpId: string,
+  ): Promise<RegistrationCertificateEntry[]> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
     return rp.registrationCertificates;
   }
 
-  revokeRegistrationCertificate(
+  async revokeRegistrationCertificate(
     rpId: string,
     certId: string,
-  ): RegistrationCertificateEntry {
-    const rp = this.relyingParties.find((r) => r.id === rpId);
+  ): Promise<RegistrationCertificateEntry> {
+    const rp = await this.byId(rpId);
     if (!rp) {
       throw new NotFoundException(`Relying party with id ${rpId} not found`);
     }
@@ -444,6 +506,7 @@ export class RelyingPartyService {
       );
     }
     cert.revokedAt = new Date().toISOString();
+    await this.persist(rp);
     return cert;
   }
 }

@@ -9,6 +9,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { createLoggerConfig } from './logger.config';
 import { UserModule } from './modules/user/user.module';
 import { HealthModule } from './modules/health/health.module';
+import { DrizzleModule } from './db/drizzle.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HealthModule } from './modules/health/health.module';
         enabled: true,
       },
     }),
+    DrizzleModule,
     HealthModule,
     AuthModule,
     RelyingPartyModule,

@@ -23,8 +23,8 @@ export class IntermediaryService {
   ) {}
 
   /** Verify that the WRP exists, belongs to the user, and is an intermediary. */
-  assertIntermediary(intermediaryId: string, userId: string) {
-    const rp = this.rpService.getById(intermediaryId);
+  async assertIntermediary(intermediaryId: string, userId: string) {
+    const rp = await this.rpService.getById(intermediaryId);
     if (!rp) {
       throw new NotFoundException(
         `Intermediary with id ${intermediaryId} not found`,
@@ -40,9 +40,13 @@ export class IntermediaryService {
   }
 
   /** Verify that a mediated RP belongs to the given intermediary. */
-  private assertMediatedRP(intermediaryId: string, rpId: string, userId: string) {
-    const intermediary = this.assertIntermediary(intermediaryId, userId);
-    const rp = this.rpService.getById(rpId);
+  private async assertMediatedRP(
+    intermediaryId: string,
+    rpId: string,
+    userId: string,
+  ) {
+    const intermediary = await this.assertIntermediary(intermediaryId, userId);
+    const rp = await this.rpService.getById(rpId);
     if (!rp) {
       throw new NotFoundException(`Mediated RP with id ${rpId} not found`);
     }
@@ -73,14 +77,18 @@ export class IntermediaryService {
     return this.rpService.findIntermediariesByUser(userId);
   }
 
-  updateIntermediary(id: string, dto: UpdateRelyingPartyDto, userId: string) {
-    this.assertIntermediary(id, userId);
+  async updateIntermediary(
+    id: string,
+    dto: UpdateRelyingPartyDto,
+    userId: string,
+  ) {
+    await this.assertIntermediary(id, userId);
     return this.rpService.update(id, dto, userId);
   }
 
-  deleteIntermediary(id: string, userId: string) {
-    this.assertIntermediary(id, userId);
-    this.rpService.delete(id, userId);
+  async deleteIntermediary(id: string, userId: string) {
+    await this.assertIntermediary(id, userId);
+    await this.rpService.delete(id, userId);
   }
 
   // --- Intermediary's own Access Certificates (WRPAC) ---
@@ -90,13 +98,13 @@ export class IntermediaryService {
     dto: AccessCertificateRegistrationDto,
     userId: string,
   ) {
-    this.assertIntermediary(intermediaryId, userId);
+    await this.assertIntermediary(intermediaryId, userId);
     dto.rpId = intermediaryId;
     return this.accessCertService.register(dto);
   }
 
-  getAccessCerts(intermediaryId: string, userId: string) {
-    this.assertIntermediary(intermediaryId, userId);
+  async getAccessCerts(intermediaryId: string, userId: string) {
+    await this.assertIntermediary(intermediaryId, userId);
     return this.accessCertService.getAll(intermediaryId);
   }
 
@@ -105,18 +113,18 @@ export class IntermediaryService {
     certId: string,
     userId: string,
   ) {
-    this.assertIntermediary(intermediaryId, userId);
+    await this.assertIntermediary(intermediaryId, userId);
     return this.accessCertService.revoke(intermediaryId, certId);
   }
 
   // --- Mediated RP management ---
 
-  registerMediatedRP(
+  async registerMediatedRP(
     intermediaryId: string,
     dto: CreateRelyingPartyDto,
     userId: string,
   ) {
-    const intermediary = this.assertIntermediary(intermediaryId, userId);
+    const intermediary = await this.assertIntermediary(intermediaryId, userId);
 
     // Force mediated RP settings
     dto.isIntermediary = false;
@@ -135,23 +143,19 @@ export class IntermediaryService {
     return this.rpService.findMediatedRPs(intermediaryId, userId);
   }
 
-  updateMediatedRP(
+  async updateMediatedRP(
     intermediaryId: string,
     rpId: string,
     dto: UpdateRelyingPartyDto,
     userId: string,
   ) {
-    this.assertMediatedRP(intermediaryId, rpId, userId);
+    await this.assertMediatedRP(intermediaryId, rpId, userId);
     return this.rpService.update(rpId, dto, userId);
   }
 
-  deleteMediatedRP(
-    intermediaryId: string,
-    rpId: string,
-    userId: string,
-  ) {
-    this.assertMediatedRP(intermediaryId, rpId, userId);
-    this.rpService.delete(rpId, userId);
+  async deleteMediatedRP(intermediaryId: string, rpId: string, userId: string) {
+    await this.assertMediatedRP(intermediaryId, rpId, userId);
+    await this.rpService.delete(rpId, userId);
   }
 
   // --- Mediated RP Registration Certificates (WRPRC) ---
@@ -162,28 +166,28 @@ export class IntermediaryService {
     dto: RegistrationCertificateCreationDto,
     userId: string,
   ) {
-    this.assertMediatedRP(intermediaryId, rpId, userId);
+    await this.assertMediatedRP(intermediaryId, rpId, userId);
     dto.rpId = rpId;
     dto.intermediary = intermediaryId;
     return this.regCertService.create(dto);
   }
 
-  getRegistrationCerts(
+  async getRegistrationCerts(
     intermediaryId: string,
     rpId: string,
     userId: string,
   ) {
-    this.assertMediatedRP(intermediaryId, rpId, userId);
+    await this.assertMediatedRP(intermediaryId, rpId, userId);
     return this.regCertService.getAll(rpId);
   }
 
-  revokeRegistrationCert(
+  async revokeRegistrationCert(
     intermediaryId: string,
     rpId: string,
     certId: string,
     userId: string,
   ) {
-    this.assertMediatedRP(intermediaryId, rpId, userId);
+    await this.assertMediatedRP(intermediaryId, rpId, userId);
     return this.regCertService.revoke(rpId, certId);
   }
 }

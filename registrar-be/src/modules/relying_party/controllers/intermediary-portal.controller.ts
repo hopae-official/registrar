@@ -62,7 +62,7 @@ export class IntermediaryPortalController {
   @ApiOperation({ summary: 'Delete an intermediary' })
   @ApiResponse({ status: 204, description: 'Intermediary deleted' })
   delete(@Param('id') id: string, @AuthenticatedUser() user: AuthPayload) {
-    this.intermediaryService.deleteIntermediary(id, user.sub);
+    return this.intermediaryService.deleteIntermediary(id, user.sub);
   }
 
   // --- Intermediary's own Access Certificates (WRPAC) ---
@@ -139,7 +139,7 @@ export class IntermediaryPortalController {
     @Param('rpId') rpId: string,
     @AuthenticatedUser() user: AuthPayload,
   ) {
-    this.intermediaryService.deleteMediatedRP(id, rpId, user.sub);
+    return this.intermediaryService.deleteMediatedRP(id, rpId, user.sub);
   }
 
   // --- Mediated RP Registration Certificates (WRPRC) ---

@@ -30,6 +30,7 @@ COPY --chown=eudi:eudi package.json pnpm-lock.yaml ./
 RUN corepack install && pnpm install --frozen-lockfile --prod --ignore-scripts
 
 COPY --from=builder --chown=eudi:eudi /app/dist ./dist
+COPY --from=builder --chown=eudi:eudi /app/drizzle ./drizzle
 
 RUN mkdir -p /app/.certs && chown eudi:eudi /app/.certs
 

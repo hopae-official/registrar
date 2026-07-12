@@ -21,9 +21,12 @@ export class AuthService {
     this.secret = this.configService.get('JWT_SECRET', 'default-secret');
   }
 
-  signIn(signInDto: SignInDto) {
+  async signIn(signInDto: SignInDto) {
     const { email, password } = signInDto;
-    const user = this.userService.authenticatePassword({ email, password });
+    const user = await this.userService.authenticatePassword({
+      email,
+      password,
+    });
     if (!user) {
       throw new UnauthorizedException('Sign in failed');
     }
@@ -38,8 +41,8 @@ export class AuthService {
     };
   }
 
-  signUp(signUpDto: SignUpDto) {
-    const user = this.userService.createUser(signUpDto);
+  async signUp(signUpDto: SignUpDto) {
+    const user = await this.userService.createUser(signUpDto);
     const payload: AuthPayload = {
       email: user.email,
       sub: user.id,

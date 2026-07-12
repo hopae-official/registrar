@@ -15,7 +15,7 @@ export class AccessCertService {
   ) {}
 
   async register(dto: AccessCertificateRegistrationDto) {
-    const rp = this.relyingPartyService.getById(dto.rpId);
+    const rp = await this.relyingPartyService.getById(dto.rpId);
     if (!rp) {
       throw new NotFoundException(
         `Relying party with id ${dto.rpId} not found`,
@@ -37,11 +37,14 @@ export class AccessCertService {
       throw new BadRequestException(err.message);
     }
 
-    const entry = this.relyingPartyService.addAccessCertificate(dto.rpId, {
-      id: result.serialNumber,
-      certificate: result.certificate,
-      dns: dto.dns,
-    });
+    const entry = await this.relyingPartyService.addAccessCertificate(
+      dto.rpId,
+      {
+        id: result.serialNumber,
+        certificate: result.certificate,
+        dns: dto.dns,
+      },
+    );
 
     return { id: entry.id, crt: entry.certificate };
   }
@@ -50,8 +53,11 @@ export class AccessCertService {
     return this.relyingPartyService.getAccessCertificates(rpId);
   }
 
-  findOne(rpId: string, certId: string) {
-    const cert = this.relyingPartyService.findAccessCertificate(rpId, certId);
+  async findOne(rpId: string, certId: string) {
+    const cert = await this.relyingPartyService.findAccessCertificate(
+      rpId,
+      certId,
+    );
     if (!cert) {
       throw new NotFoundException(`Access certificate ${certId} not found`);
     }
@@ -59,7 +65,10 @@ export class AccessCertService {
   }
 
   async revoke(rpId: string, certId: string) {
-    const cert = this.relyingPartyService.findAccessCertificate(rpId, certId);
+    const cert = await this.relyingPartyService.findAccessCertificate(
+      rpId,
+      certId,
+    );
     if (!cert) {
       throw new NotFoundException(`Access certificate ${certId} not found`);
     }

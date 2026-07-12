@@ -1,6 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SignUpDto } from '../auth/auth.dto';
 import { randomUUID } from 'node:crypto';
+import { eq } from 'drizzle-orm';
+import { DRIZZLE, type DrizzleDb } from '../../db/drizzle.module';
+import { users as userTable } from '../../db/schema';
 
 export type User = {
   id: string;
@@ -12,31 +15,58 @@ export type User = {
 
 @Injectable()
 export class UserService {
-  private userAuthMap: Map<string, User> = new Map<string, User>();
-  private userIdMap: Map<string, User> = new Map<string, User>();
+  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
 
-  createUser(dto: SignUpDto) {
+  private toUser(row: typeof userTable.$inferSelect): User {
+    return {
+      id: row.id,
+      email: row.email,
+      name: row.name ?? '',
+      company: row.company ?? '',
+      password: row.password,
+    };
+  }
+
+  async createUser(dto: SignUpDto): Promise<User> {
     const id = randomUUID();
     const user: User = {
       ...dto,
       id,
     };
-    this.userAuthMap.set(user.email, user);
-    this.userIdMap.set(user.id, user);
+    await this.db.insert(userTable).values({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      company: user.company,
+      password: user.password,
+    });
     return user;
   }
 
-  getUserByEmail(email: string) {
-    return this.userAuthMap.get(email);
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const rows = await this.db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.email, email))
+      .limit(1);
+    return rows[0] ? this.toUser(rows[0]) : undefined;
   }
 
-  getUserById(id: string) {
-    return this.userIdMap.get(id);
+  async getUserById(id: string): Promise<User | undefined> {
+    const rows = await this.db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.id, id))
+      .limit(1);
+    return rows[0] ? this.toUser(rows[0]) : undefined;
   }
 
-  authenticatePassword(payload: { email: string; password: string }) {
+  async authenticatePassword(payload: {
+    email: string;
+    password: string;
+  }): Promise<User | null> {
     const { email, password } = payload;
-    const user = this.getUserByEmail(email);
+    const user = await this.getUserByEmail(email);
     if (!user || user.password !== password) {
       return null;
     }

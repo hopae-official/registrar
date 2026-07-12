@@ -25,7 +25,7 @@ export class PublicRegistryController {
   @ApiProduces('application/jwt')
   @ApiResponse({ status: 200, description: 'JWS-signed paginated list of matching WRPs' })
   async findAll(@Query() query: SearchRelyingPartyQueryDto, @Res() res: FastifyReply) {
-    const data = this.rpService.findAll(query);
+    const data = await this.rpService.findAll(query);
     const jws = await this.cryptoService.signJWT(data, { typ: 'wrp-registry+jwt' });
     res.type('application/jwt').send(jws);
   }
@@ -35,7 +35,7 @@ export class PublicRegistryController {
   @ApiProduces('application/jwt')
   @ApiResponse({ status: 200, description: 'JWS-signed intended use result' })
   async checkIntendedUse(@Query() query: CheckIntendedUseQueryDto, @Res() res: FastifyReply) {
-    const result = this.rpService.checkIntendedUse(query);
+    const result = await this.rpService.checkIntendedUse(query);
     const jws = await this.cryptoService.signJWT({ ...result }, { typ: 'wrp-registry+jwt' });
     res.type('application/jwt').send(jws);
   }
@@ -49,7 +49,7 @@ export class PublicRegistryController {
     @Query('intermediary') intermediaryIdentifier: string,
     @Res() res: FastifyReply,
   ) {
-    const verified = this.rpService.verifyIntermediaryRelationship(rpIdentifier, intermediaryIdentifier);
+    const verified = await this.rpService.verifyIntermediaryRelationship(rpIdentifier, intermediaryIdentifier);
     const jws = await this.cryptoService.signJWT(
       { rp: rpIdentifier, intermediary: intermediaryIdentifier, verified },
       { typ: 'wrp-registry+jwt' },
@@ -63,7 +63,7 @@ export class PublicRegistryController {
   @ApiResponse({ status: 200, description: 'JWS-signed WRP data' })
   @ApiResponse({ status: 404, description: 'Not found' })
   async findOne(@Param('id') id: string, @Res() res: FastifyReply) {
-    const data = this.rpService.findOne(id);
+    const data = await this.rpService.findOne(id);
     const jws = await this.cryptoService.signJWT(data, { typ: 'wrp-registry+jwt' });
     res.type('application/jwt').send(jws);
   }
