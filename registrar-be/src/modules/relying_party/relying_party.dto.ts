@@ -233,3 +233,13 @@ export type EntitlementUri =
 // WRPRC certificate-policy OID (ETSI TS 119 475 clause 6.1.3):
 // { itu-t(0) identified-organization(4) etsi(0) eudiwrpa(19475) policy-identifiers(3) wrprc(1) }
 export const WRPRC_POLICY_OID = '0.4.0.19475.3.1';
+
+// WRPAC certificate-policy OIDs (ETSI TS 119 411-8 clause 5.3):
+// { itu-t(0) identified-organization(4) etsi(0) eudiwrp(194118) policy-identifiers(1) … }
+// n = natural person (e-signature), l = legal person (e-seal); QCP = qualified.
+export const WRPAC_POLICY_OIDS = {
+  NCP_NATURAL: '0.4.0.194118.1.1',
+  NCP_LEGAL: '0.4.0.194118.1.2',
+  QCP_NATURAL: '0.4.0.194118.1.3',
+  QCP_LEGAL: '0.4.0.194118.1.4',
+} as const;

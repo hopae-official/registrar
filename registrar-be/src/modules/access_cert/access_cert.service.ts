@@ -6,7 +6,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { RelyingPartyService } from '../relying_party/relying_party.service';
 import { CryptoService } from '../crypto/crypto.service';
-import { AccessCertificateRegistrationDto } from '../relying_party/relying_party.dto';
+import {
+  AccessCertificateRegistrationDto,
+  WRPAC_POLICY_OIDS,
+} from '../relying_party/relying_party.dto';
 
 @Injectable()
 export class AccessCertService {
@@ -27,6 +30,9 @@ export class AccessCertService {
     // WRPAC subject per ETSI TS 119 475 Table 1 (legal person): commonName = tradeName (falling back
     // to legalName per GEN-5.1.2-02), organizationName = legalName, organizationIdentifier = the
     // registered semantic identifier that also appears as the WRPRC `sub` (GEN-5.1.1-02 linkability).
+    // Non-qualified certificate policy (ETSI TS 119 411-8 clause 5.3): NCP-l for a legal person
+    // (e-seal), NCP-n for a natural person (e-signature).
+    const isNatural = !!(rp.givenName || rp.familyName);
     const subject = {
       commonName: rp.tradeName ?? rp.legalName ?? 'Unknown',
       organizationName: rp.legalName ?? rp.tradeName ?? 'Unknown',
@@ -35,6 +41,9 @@ export class AccessCertService {
       email: rp.email,
       phone: rp.phone,
       supportURI: rp.supportURI?.[0],
+      policyOid: isNatural
+        ? WRPAC_POLICY_OIDS.NCP_NATURAL
+        : WRPAC_POLICY_OIDS.NCP_LEGAL,
     };
 
     let result: { serialNumber: string; certificate: string };

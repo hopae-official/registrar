@@ -33,6 +33,8 @@ export interface WrpacSubject {
   email?: string;
   phone?: string;
   supportURI?: string;
+  /** Certificate-policy OID for the certificatePolicies extension (ETSI TS 119 411-8 clause 5.3). */
+  policyOid: string;
 }
 
 @Injectable()
@@ -321,6 +323,11 @@ basicConstraints = CA:FALSE
 keyUsage = critical, digitalSignature
 ${sanLine}
 crlDistributionPoints = URI:${this.crlHostPath}
+certificatePolicies = @cert_pol
+
+[ cert_pol ]
+policyIdentifier = ${subject.policyOid}
+CPS.1 = ${this.host}/certificate-policy
 `;
   }
 
