@@ -70,6 +70,26 @@ export class OpenSSLService implements OnModuleInit {
   private async initialize(): Promise<void> {
     this.ensureFolderExists();
     this.createOpenSSLConfig();
+    await this.loadCaFromEnv();
+  }
+
+  /**
+   * Persistent CA: if `REGISTRAR_CA_CERT` + `REGISTRAR_CA_KEY` are set (PEM), write them so the CA survives
+   * container restarts and matches the anchor published in the Trusted List. If unset, `generateKeysAndCert()`
+   * mints an ephemeral CA (dev only — a fresh container would otherwise invalidate all issued certs).
+   */
+  private async loadCaFromEnv(): Promise<void> {
+    const certPem = this.configService.get<string>('REGISTRAR_CA_CERT');
+    const keyPem = this.configService.get<string>('REGISTRAR_CA_KEY');
+    if (!certPem || !keyPem) return;
+    writeFileSync(this.certPath, certPem.trim() + '\n');
+    writeFileSync(this.privateKeyPath, keyPem.trim() + '\n');
+    await execAsync(
+      `openssl x509 -in ${this.certPath} -outform der -out ${this.certPath}.der`,
+    );
+    this.cachedCert = null;
+    this.cachedPrivateKey = null;
+    this.logger.log('CA loaded from env (REGISTRAR_CA_CERT / REGISTRAR_CA_KEY)');
   }
 
   private ensureFolderExists(): void {
@@ -91,6 +111,10 @@ export class OpenSSLService implements OnModuleInit {
       this.cachedCert = readFileSync(this.certPath, 'utf8');
     }
     return this.cachedCert;
+  }
+
+  get ownCertDer(): Buffer {
+    return readFileSync(`${this.certPath}.der`);
   }
 
   privateKey(): KeyObject {
