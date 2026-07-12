@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RelyingPartyService } from '../relying_party/relying_party.service';
 import { CryptoService } from '../crypto/crypto.service';
 import { AccessCertificateRegistrationDto } from '../relying_party/relying_party.dto';
@@ -12,6 +13,7 @@ export class AccessCertService {
   constructor(
     private readonly relyingPartyService: RelyingPartyService,
     private readonly cryptoService: CryptoService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: AccessCertificateRegistrationDto) {
@@ -22,14 +24,23 @@ export class AccessCertService {
       );
     }
 
-    const rpName = rp.legalName ?? rp.tradeName ?? 'Unknown';
-    const orgIdentifier = this.relyingPartyService.getUniqueIdentifier(rp);
+    // WRPAC subject per ETSI TS 119 475 Table 1 (legal person): commonName = tradeName (falling back
+    // to legalName per GEN-5.1.2-02), organizationName = legalName, organizationIdentifier = the
+    // registered semantic identifier that also appears as the WRPRC `sub` (GEN-5.1.1-02 linkability).
+    const subject = {
+      commonName: rp.tradeName ?? rp.legalName ?? 'Unknown',
+      organizationName: rp.legalName ?? rp.tradeName ?? 'Unknown',
+      organizationIdentifier: this.relyingPartyService.getUniqueIdentifier(rp),
+      country: this.configService.get<string>('WRP_COUNTRY', 'LU'),
+      email: rp.email,
+      phone: rp.phone,
+      supportURI: rp.supportURI?.[0],
+    };
 
     let result: { serialNumber: string; certificate: string };
     try {
       result = await this.cryptoService.createCert(
-        rpName,
-        orgIdentifier,
+        subject,
         dto.publicKey,
         dto.dns,
       );

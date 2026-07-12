@@ -20,6 +20,21 @@ import { Mutex } from 'async-mutex';
 
 const execAsync = promisify(exec);
 
+/**
+ * WRPAC subject/SAN attributes per ETSI TS 119 475 Table 1 (legal person). The X.509 encoding of each
+ * (commonName/organizationName/organizationIdentifier/countryName in the DN; supportURI/email/phone in
+ * the SAN) follows ETSI EN 319 412-3; the KU/EKU and certificate policy are governed by ETSI TS 119 411-8.
+ */
+export interface WrpacSubject {
+  commonName: string;
+  organizationName: string;
+  organizationIdentifier: string;
+  country: string;
+  email?: string;
+  phone?: string;
+  supportURI?: string;
+}
+
 @Injectable()
 export class OpenSSLService implements OnModuleInit {
   private readonly logger = new Logger(OpenSSLService.name);
@@ -156,8 +171,7 @@ export class OpenSSLService implements OnModuleInit {
   }
 
   async createCert(
-    rpName: string,
-    orgIdentifier: string,
+    subject: WrpacSubject,
     publicKeyPem: string,
     dns?: string[],
   ): Promise<{ serialNumber: string; certificate: string }> {
@@ -178,7 +192,7 @@ export class OpenSSLService implements OnModuleInit {
       ];
 
       this.logger.log(
-        `Creating certificate for RP: ${rpName}, serial: ${serialNumber}`,
+        `Creating certificate for RP: ${subject.commonName}, serial: ${serialNumber}`,
       );
 
       try {
@@ -187,7 +201,7 @@ export class OpenSSLService implements OnModuleInit {
         writeFileSync(serialFile, serialNumber);
         writeFileSync(
           configPath,
-          this.generateCertConfig(rpName, orgIdentifier, dns, serialFile),
+          this.generateCertConfig(subject, dns, serialFile),
         );
         writeFileSync(publicKeyPath, publicKeyPem);
 
@@ -200,7 +214,7 @@ export class OpenSSLService implements OnModuleInit {
         );
 
         const certificate = readFileSync(certPath, 'utf8');
-        this.logger.log(`Certificate created for RP: ${rpName}`);
+        this.logger.log(`Certificate created for RP: ${subject.commonName}`);
         return { serialNumber, certificate };
       } finally {
         for (const f of tempFiles) {
@@ -235,14 +249,22 @@ export class OpenSSLService implements OnModuleInit {
   }
 
   private generateCertConfig(
-    rpName: string,
-    orgIdentifier: string,
+    subject: WrpacSubject,
     dns: string[] | undefined,
     serialFile: string,
   ): string {
-    const altNames = dns
-      ? dns.map((d, i) => `DNS.${i + 1} = ${d}`).join('\n')
-      : '';
+    // SAN per ETSI TS 119 475 Table 1: DNS (for OpenID4VP x509_san_dns reader auth) plus the WRP's
+    // supportURI (uniformResourceIdentifier), email (rfc822Name) and phone (otherName encoded as
+    // id-at-telephoneNumber, OID 2.5.4.20).
+    const altLines: string[] = [];
+    (dns ?? []).forEach((d, i) => altLines.push(`DNS.${i + 1} = ${d}`));
+    if (subject.supportURI) altLines.push(`URI.1 = ${subject.supportURI}`);
+    if (subject.email) altLines.push(`email.1 = ${subject.email}`);
+    if (subject.phone) {
+      altLines.push(`otherName.1 = 2.5.4.20;UTF8:${subject.phone}`);
+    }
+    const altNames = altLines.join('\n');
+    const sanLine = altLines.length ? 'subjectAltName = @alt_names' : '';
 
     return `
 [ ca ]
@@ -280,10 +302,10 @@ oid_section = custom_oids
 organizationIdentifier = 2.5.4.97
 
 [ req_distinguished_name ]
-countryName = 'LU'
-organizationName = ${rpName}
-organizationIdentifier = ${orgIdentifier}
-commonName = ${rpName}
+countryName = ${subject.country}
+organizationName = ${subject.organizationName}
+organizationIdentifier = ${subject.organizationIdentifier}
+commonName = ${subject.commonName}
 
 [ policy_match ]
 countryName             = supplied
@@ -296,9 +318,8 @@ ${altNames}
 
 [ v3_req ]
 basicConstraints = CA:FALSE
-keyUsage = digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
+keyUsage = critical, digitalSignature
+${sanLine}
 crlDistributionPoints = URI:${this.crlHostPath}
 `;
   }

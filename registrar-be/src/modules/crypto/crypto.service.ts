@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { OpenSSLService } from './openssl.service';
+import { OpenSSLService, WrpacSubject } from './openssl.service';
 import { JWTHeaderParameters, JWTPayload, SignJWT } from 'jose';
 import { ConfigService } from '@nestjs/config';
 import { Token, ProtectedHeaders } from '@lukas.j.han/jades';
@@ -41,12 +41,11 @@ export class CryptoService implements OnModuleInit {
   }
 
   async createCert(
-    rpName: string,
-    orgIdentifier: string,
+    subject: WrpacSubject,
     publicKey: string,
     dns?: string[],
   ): Promise<{ serialNumber: string; certificate: string }> {
-    return this.openssl.createCert(rpName, orgIdentifier, publicKey, dns);
+    return this.openssl.createCert(subject, publicKey, dns);
   }
 
   async signJWT(
