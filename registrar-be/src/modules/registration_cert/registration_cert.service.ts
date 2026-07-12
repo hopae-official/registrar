@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { RelyingPartyService } from '../relying_party/relying_party.service';
 import { CryptoService } from '../crypto/crypto.service';
+import { StatusListService } from '../status_list/status-list.service';
 import {
   RegistrationCertificateCreationDto,
   MultiLangString,
@@ -20,6 +21,7 @@ export class RegistrationCertService {
     private readonly relyingPartyService: RelyingPartyService,
     private readonly cryptoService: CryptoService,
     private readonly configService: ConfigService,
+    private readonly statusListService: StatusListService,
   ) {}
 
   async create(dto: RegistrationCertificateCreationDto) {
@@ -116,6 +118,12 @@ export class RegistrationCertService {
       payload.act = { sub: intSub };
     }
 
+    // Table 7 `status` — allocate an IETF Token Status List index for this WRPRC so it can be revoked.
+    const statusRef = await this.statusListService.recordIssuance(jti);
+    payload.status = {
+      status_list: { idx: statusRef.idx, uri: statusRef.uri },
+    };
+
     // GEN-5.2.1-04: sign as a JAdES baseline (B-B) signature with typ = rc-wrp+jwt.
     const jwt = this.cryptoService.signJAdES(payload, 'rc-wrp+jwt');
 
@@ -153,6 +161,8 @@ export class RegistrationCertService {
     if (cert.revokedAt) {
       throw new BadRequestException('Certificate is already revoked');
     }
+    // Flip the WRPRC's status-list bit to INVALID (certId is the jti / status-list key).
+    await this.statusListService.revoke(certId);
     return this.relyingPartyService.revokeRegistrationCertificate(rpId, certId);
   }
 }

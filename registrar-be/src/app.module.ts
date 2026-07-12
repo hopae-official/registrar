@@ -10,6 +10,7 @@ import { createLoggerConfig } from './logger.config';
 import { UserModule } from './modules/user/user.module';
 import { HealthModule } from './modules/health/health.module';
 import { DrizzleModule } from './db/drizzle.module';
+import { StatusListModule } from './modules/status_list/status-list.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DrizzleModule } from './db/drizzle.module';
     AuthModule,
     RelyingPartyModule,
     UserModule,
+    StatusListModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,12 @@
-import { pgTable, uuid, varchar, boolean, jsonb, timestamp } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  boolean,
+  jsonb,
+  timestamp,
+  integer,
+} from 'drizzle-orm/pg-core';
 import { randomUUID } from 'node:crypto';
 import type { WalletRelyingParty } from '../modules/relying_party/relying_party.dto';
 
@@ -14,6 +22,19 @@ export const relyingParties = pgTable('relying_parties', {
   data: jsonb('data').$type<WalletRelyingParty>().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+/**
+ * One row per issued WRPRC, backing the IETF Token Status List served at /status-lists/1.
+ * `status_idx` (a Postgres identity column) is the bit index embedded as `status.status_list.idx`
+ * in the WRPRC; revocation flips `revoked`.
+ */
+export const wrprcStatus = pgTable('wrprc_status', {
+  jti: uuid('jti').primaryKey(),
+  statusIdx: integer('status_idx').generatedByDefaultAsIdentity().notNull(),
+  revoked: boolean('revoked').notNull().default(false),
+  revokedAt: timestamp('revoked_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 /** Portal accounts (owners of RPs). */

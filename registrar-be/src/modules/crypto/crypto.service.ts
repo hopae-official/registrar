@@ -4,6 +4,7 @@ import { JWTHeaderParameters, JWTPayload, SignJWT } from 'jose';
 import { ConfigService } from '@nestjs/config';
 import { Token, ProtectedHeaders } from '@lukas.j.han/jades';
 import { createHash } from 'node:crypto';
+import type { StatusList } from '../status_list/status-list.codec';
 
 @Injectable()
 export class CryptoService implements OnModuleInit {
@@ -83,6 +84,25 @@ export class CryptoService implements OnModuleInit {
     );
     token.sign('ES256', this.openssl.privateKey());
     return token.toString();
+  }
+
+  /**
+   * Sign an IETF Token Status List token (`statuslist+jwt`). Plain JWS (ES256 + x5c) per the
+   * status-list draft — the WRPRC's `status` claim points a wallet here to check revocation.
+   */
+  async signStatusList(
+    statusList: StatusList,
+    sub: string,
+    ttlSec: number,
+  ): Promise<string> {
+    const now = Math.floor(Date.now() / 1000);
+    return new SignJWT({ status_list: statusList, ttl: ttlSec })
+      .setProtectedHeader({ typ: 'statuslist+jwt', alg: 'ES256', x5c: this.x5c })
+      .setIssuer(this.issuer)
+      .setSubject(sub)
+      .setIssuedAt(now)
+      .setExpirationTime(now + ttlSec)
+      .sign(this.openssl.privateKey());
   }
 
   async revokeCert(certificatePem: string): Promise<void> {
