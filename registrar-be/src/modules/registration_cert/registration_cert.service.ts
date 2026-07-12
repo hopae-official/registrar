@@ -7,7 +7,12 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { RelyingPartyService } from '../relying_party/relying_party.service';
 import { CryptoService } from '../crypto/crypto.service';
-import { RegistrationCertificateCreationDto } from '../relying_party/relying_party.dto';
+import {
+  RegistrationCertificateCreationDto,
+  MultiLangString,
+  ENTITLEMENT_URIS,
+  WRPRC_POLICY_OID,
+} from '../relying_party/relying_party.dto';
 
 @Injectable()
 export class RegistrationCertService {
@@ -35,42 +40,65 @@ export class RegistrationCertService {
       );
     }
 
-    const distinguishedName = this.relyingPartyService.getUniqueIdentifier(rp);
+    const sub = this.relyingPartyService.getUniqueIdentifier(rp);
     const jti = randomUUID();
     const host = this.configService.get<string>(
       'HOST',
       'http://localhost:18000',
     );
+    const country = this.configService.get<string>('WRP_COUNTRY', 'LU');
 
-    // Build WRP JWT payload per TS5 spec / reference implementation
+    // GEN-5.2.4-03: the WRPRC shall carry at least one EU-level entitlement (clause A.2).
+    const knownEntitlements = new Set<string>(Object.values(ENTITLEMENT_URIS));
+    const entitlements = rp.entitlement ?? [];
+    if (!entitlements.some((e) => knownEntitlements.has(e))) {
+      throw new BadRequestException(
+        'WRPRC requires at least one EU-level entitlement (ETSI TS 119 475 clause A.2, GEN-5.2.4-03)',
+      );
+    }
+
+    // B.2.6 MultiLangString → {lang, value} as used throughout the WRPRC payload.
+    const toLangValue = (m: MultiLangString) => ({
+      lang: m.lang,
+      value: m.content,
+    });
+
+    // WRPRC payload per ETSI TS 119 475 clause 5.2.4 (Tables 7-10) — see Annex C for a decoded example.
     const payload: Record<string, unknown> = {
-      iss: this.cryptoService.issuer,
-      sub: distinguishedName,
-      jti,
-      iat: Math.floor(Date.now() / 1000),
+      // Table 7 — attributes provided by the registry
       name: rp.tradeName ?? rp.legalName ?? '',
-      legal_name: rp.legalName ?? '',
-      country: 'LU',
+      ...(rp.legalName ? { sub_ln: rp.legalName } : {}),
+      ...(rp.givenName ? { sub_gn: rp.givenName } : {}),
+      ...(rp.familyName ? { sub_fn: rp.familyName } : {}),
+      sub,
+      country,
       registry_uri: host + rp.registryURI,
-      srvDescription: rp.srvDescription,
-      entitlements: rp.entitlement,
-      isPSB: rp.isPSB,
-      support_uri: dto.support_uri,
+      srv_description: [(rp.srvDescription ?? []).map(toLangValue)],
+      entitlements,
       privacy_policy: dto.privacy_policy,
-      purpose: dto.purpose,
-      credentials: dto.credentials,
-      provided_attestations: dto.provided_attestations,
-      dpa: {
+      info_uri: rp.infoURI?.[0] ?? host,
+      support_uri: dto.support_uri ?? rp.supportURI?.[0] ?? '',
+      supervisory_authority: {
         email: rp.supervisoryAuthority?.email ?? '',
         phone: rp.supervisoryAuthority?.phone ?? '',
         uri: rp.supervisoryAuthority?.infoURI?.[0] ?? '',
       },
-      policy_id: '',
-      certificate_policy: '',
-      info_uri: rp.infoURI?.[0] ?? host,
+      policy_id: [WRPRC_POLICY_OID],
+      certificate_policy: `${host}/certificate-policy`,
+      iat: Math.floor(Date.now() / 1000),
+      // Table 10 — optional
+      public_body: rp.isPSB ?? false,
     };
 
-    // Handle intermediary reference (ETSI TS 119 475, Table 10)
+    // Table 9 — service provider (data-request scope)
+    if (dto.purpose?.length) payload.purpose = dto.purpose.map(toLangValue);
+    if (dto.credentials?.length) payload.credentials = dto.credentials;
+
+    // Table 8 — attestation provider (issued to PID/QEAA/Non-Q/PUB EAA providers)
+    const attestations = dto.provided_attestations ?? rp.providesAttestations;
+    if (attestations?.length) payload.provides_attestations = attestations;
+
+    // Intermediary reference (Table 10) + actor claim (GEN-5.2.4-09).
     if (dto.intermediary) {
       const intermediary = await this.relyingPartyService.getById(
         dto.intermediary,
@@ -80,16 +108,16 @@ export class RegistrationCertService {
           `Intermediary with id ${dto.intermediary} not found`,
         );
       }
+      const intSub = this.relyingPartyService.getUniqueIdentifier(intermediary);
       payload.intermediary = {
-        sub: this.relyingPartyService.getUniqueIdentifier(intermediary),
+        sub: intSub,
         sname: intermediary.tradeName ?? intermediary.legalName ?? '',
       };
+      payload.act = { sub: intSub };
     }
 
-    // Sign as JWT (ES256 with x5c chain)
-    const jwt = await this.cryptoService.signJWT(payload, {
-      typ: 'rc-wrp+jwt',
-    });
+    // GEN-5.2.1-04: sign as a JAdES baseline (B-B) signature with typ = rc-wrp+jwt.
+    const jwt = this.cryptoService.signJAdES(payload, 'rc-wrp+jwt');
 
     // Store in RP object
     const entry = await this.relyingPartyService.addRegistrationCertificate(

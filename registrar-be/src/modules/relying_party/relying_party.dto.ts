@@ -229,3 +229,7 @@ export const ENTITLEMENT_URIS = {
 
 export type EntitlementUri =
   (typeof ENTITLEMENT_URIS)[keyof typeof ENTITLEMENT_URIS];
+
+// WRPRC certificate-policy OID (ETSI TS 119 475 clause 6.1.3):
+// { itu-t(0) identified-organization(4) etsi(0) eudiwrpa(19475) policy-identifiers(3) wrprc(1) }
+export const WRPRC_POLICY_OID = '0.4.0.19475.3.1';

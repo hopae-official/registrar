@@ -82,7 +82,10 @@ export class RelyingPartyService {
   }
 
   getUniqueIdentifier(rp: WalletRelyingParty): string {
-    return rp.id;
+    // The registered semantic identifier (EORI/LEI/VAT…) — this is what a WRPAC serialNumber and a
+    // WRPRC `sub` must carry so the wallet can bind the two certificates (ETSI TS 119 475 Table E.2,
+    // GEN-5.2.4-02). Fall back to the internal id only when no identifier was registered.
+    return rp.identifier?.[0]?.value ?? rp.id;
   }
 
   async findAll(query: SearchRelyingPartyQueryDto) {
