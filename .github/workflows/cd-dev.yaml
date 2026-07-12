@@ -79,9 +79,40 @@ jobs:
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
 
+      - name: Sync ExternalSecret
+        run: |
+          kubectl apply -f infra/k8s-manifests/rgtr/$ENVIRONMENT/external-secret.yaml
+          OLD_RV=$(kubectl get externalsecret rgtr-api-secrets -o jsonpath='{.status.syncedResourceVersion}' 2>/dev/null || echo "")
+          if [ -z "$OLD_RV" ]; then
+            echo "First deployment — waiting for initial secret sync"
+            kubectl wait --for=condition=SecretSynced externalsecret/rgtr-api-secrets -n default --timeout=60s
+          else
+            kubectl annotate externalsecret/rgtr-api-secrets -n default force-sync=$(date +%s) --overwrite
+            for i in $(seq 1 5); do
+              NEW_RV=$(kubectl get externalsecret rgtr-api-secrets -o jsonpath='{.status.syncedResourceVersion}')
+              [ "$NEW_RV" != "$OLD_RV" ] && echo "Secret re-synced (${i})" && break
+              [ $i -eq 5 ] && echo "ERROR: Secret re-sync timed out" && exit 1
+              sleep 5
+            done
+          fi
+
+      - name: Run database migration
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          kubectl run rgtr-migration-${{ github.run_number }} \
+            --image=$IMAGE \
+            --restart=Never \
+            --attach \
+            --rm \
+            --timeout=120s \
+            --env="DATABASE_URL=$(kubectl get secret rgtr-api-secrets -o jsonpath='{.data.DATABASE_URL}' | base64 -d)" \
+            --command -- node dist/migrate.js
+
       - name: Deploy to EKS
         env:
           IMAGE: ${{ steps.image.outputs.image }}
+          IMAGE_EXISTS: ${{ steps.check-image.outputs.exists }}
         run: |
           cd infra/k8s-manifests/rgtr/$ENVIRONMENT
 
@@ -92,6 +123,11 @@ jobs:
           kubectl apply -f service.yaml
           kubectl apply -f ingress.yaml
           kubectl apply -f deployment.yaml
+
+          # Force rollout when image unchanged
+          if [ "$IMAGE_EXISTS" = "true" ]; then
+            kubectl rollout restart deployment/rgtr-api
+          fi
 
           # Wait for rollout
           kubectl rollout status deployment/rgtr-api --timeout=300s
