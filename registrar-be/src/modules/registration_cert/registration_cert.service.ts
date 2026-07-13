@@ -88,6 +88,8 @@ export class RegistrationCertService {
       policy_id: [WRPRC_POLICY_OID],
       certificate_policy: `${host}/certificate-policy`,
       iat: Math.floor(Date.now() / 1000),
+      // GEN-5.2.4-08: a WRPRC shall be valid for at most 12 months — set exp = iat + 365 days.
+      exp: Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60,
       // Table 10 — optional
       public_body: rp.isPSB ?? false,
     };

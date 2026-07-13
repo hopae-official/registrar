@@ -53,15 +53,14 @@ export class CryptoService implements OnModuleInit {
     payload: JWTPayload,
     header?: Omit<JWTHeaderParameters, 'alg'>,
   ): Promise<string> {
-    const jwt = new SignJWT(payload);
-    jwt.setProtectedHeader({
-      ...header,
-      x5c: this.x5c,
-      alg: 'ES256',
-      iss: this.issuer,
-      iat: Math.floor(Date.now() / 1000),
-    });
-    return jwt.sign(this.openssl.privateKey());
+    // RFC 7519 §4.1: iss/iat/exp are PAYLOAD claims (not JOSE header). The header carries only alg/typ/x5c.
+    const now = Math.floor(Date.now() / 1000);
+    return new SignJWT({ ...payload })
+      .setProtectedHeader({ ...header, x5c: this.x5c, alg: 'ES256' })
+      .setIssuer(this.issuer)
+      .setIssuedAt(now)
+      .setExpirationTime(now + 300) // short-lived signed registry response (5 min freshness window)
+      .sign(this.openssl.privateKey());
   }
 
   /**

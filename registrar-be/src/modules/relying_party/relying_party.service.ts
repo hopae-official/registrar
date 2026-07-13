@@ -32,11 +32,13 @@ export class RelyingPartyService {
    * append the `PublicRegistryController` path `registry`.
    */
   private readonly registryBase: string;
+  private readonly country: string;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDb,
     config: ConfigService,
   ) {
+    this.country = config.get<string>('WRP_COUNTRY', 'LU');
     const apiBaseUrl = config
       .get<string>('API_BASE_URL', 'http://localhost:18000/registrar')
       .replace(/\/+$/, '');
@@ -112,10 +114,25 @@ export class RelyingPartyService {
   }
 
   getUniqueIdentifier(rp: WalletRelyingParty): string {
-    // The registered semantic identifier (EORI/LEI/VAT…) — this is what a WRPAC serialNumber and a
-    // WRPRC `sub` must carry so the wallet can bind the two certificates (ETSI TS 119 475 Table E.2,
-    // GEN-5.2.4-02). Fall back to the internal id only when no identifier was registered.
-    return rp.identifier?.[0]?.value ?? rp.id;
+    // The registered semantic identifier — shared by the WRPAC `organizationIdentifier` and the WRPRC `sub`
+    // so the wallet can bind the two certificates (ETSI TS 119 475 Table E.2, GEN-5.2.4-02). Formatted with
+    // the EN 319 412-1 §5.1.4 scheme-specific semantic prefix (GEN-5.1.3). Fall back to the internal id when
+    // no identifier was registered.
+    const id = rp.identifier?.[0];
+    if (!id?.value) return rp.id;
+    const country = this.country;
+    switch (id.type) {
+      case 'LEI':
+        return `LEIXG-${id.value}`; // LEI is global — "XG", no country code
+      case 'VAT':
+        return `VAT${country}-${id.value}`;
+      case 'NTR':
+        return `NTR${country}-${id.value}`;
+      case 'EORI':
+        return `EORI${country}-${id.value}`;
+      default:
+        return id.value; // unknown scheme → raw value (best effort)
+    }
   }
 
   async findAll(query: SearchRelyingPartyQueryDto) {
