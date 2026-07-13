@@ -158,7 +158,7 @@ export default function Home() {
                               <span className="font-medium text-foreground">
                                 {id.type}:
                               </span>{' '}
-                              {id.value}
+                              {id.identifier}
                             </span>
                           ))}
                         </div>

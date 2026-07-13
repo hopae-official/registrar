@@ -94,7 +94,7 @@ export default function RPPublicDetail() {
                 <div className="flex flex-col gap-0.5">
                   {rp.identifier?.map((id: any, i: number) => (
                     <span key={i}>
-                      {id.type}: {id.value}
+                      {id.type}: {id.identifier}
                     </span>
                   ))}
                 </div>

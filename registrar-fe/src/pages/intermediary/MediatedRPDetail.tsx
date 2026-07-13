@@ -286,7 +286,7 @@ export default function MediatedRPDetail() {
                 value={
                   <div className="flex flex-col gap-0.5">
                     {rp.identifier?.map((id: any, i: number) => (
-                      <span key={i}>{id.type}: {id.value}</span>
+                      <span key={i}>{id.type}: {id.identifier}</span>
                     ))}
                   </div>
                 }
