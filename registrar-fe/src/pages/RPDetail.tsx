@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getWRP,
@@ -14,6 +14,17 @@ import {
 } from '../api/client';
 import { registrationCertPreset, accessCertPreset, credentialPresets } from '../presets/data';
 import { decodeX509, decodeJWT } from '../utils/certDecode';
+import { ArrowLeft, Plus, Trash2, RefreshCw, ShieldCheck, FileText, KeyRound } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function formatDN(dn: Record<string, string>): string {
   const order = ['CN', 'O', 'organizationIdentifier', 'OU', 'C'];
@@ -28,58 +39,48 @@ function formatDN(dn: Record<string, string>): string {
   return parts.join(', ');
 }
 
+function DetailRow({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[200px_1fr] sm:gap-4">
+      <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+      <dd className={cn('min-w-0 text-sm break-all', mono && 'font-mono text-xs')}>{value}</dd>
+    </div>
+  );
+}
+
 function X509DecodedView({ pem }: { pem: string }) {
   const decoded = useMemo(() => decodeX509(pem), [pem]);
-  if (!decoded) return <p className="decode-error">Unable to decode certificate</p>;
+  if (!decoded) return <p className="text-sm text-destructive">Unable to decode certificate</p>;
   return (
-    <div className="decoded-grid">
-      <div className="decoded-row">
-        <span className="decoded-label">Subject</span>
-        <span className="decoded-value">{formatDN(decoded.subject)}</span>
-      </div>
-      <div className="decoded-row">
-        <span className="decoded-label">Issuer</span>
-        <span className="decoded-value">{formatDN(decoded.issuer)}</span>
-      </div>
-      <div className="decoded-row">
-        <span className="decoded-label">Serial Number</span>
-        <span className="decoded-value mono">{decoded.serialNumber}</span>
-      </div>
-      <div className="decoded-row">
-        <span className="decoded-label">Not Before</span>
-        <span className="decoded-value">{decoded.notBefore}</span>
-      </div>
-      <div className="decoded-row">
-        <span className="decoded-label">Not After</span>
-        <span className="decoded-value">{decoded.notAfter}</span>
-      </div>
-      <div className="decoded-row">
-        <span className="decoded-label">Signature Algorithm</span>
-        <span className="decoded-value">{decoded.signatureAlgorithm}</span>
-      </div>
-      <div className="decoded-row">
-        <span className="decoded-label">Public Key</span>
-        <span className="decoded-value">{decoded.publicKeyAlgorithm}</span>
-      </div>
+    <dl className="divide-y divide-border rounded-md border border-border px-4">
+      <DetailRow label="Subject" value={formatDN(decoded.subject)} />
+      <DetailRow label="Issuer" value={formatDN(decoded.issuer)} />
+      <DetailRow label="Serial Number" value={decoded.serialNumber} mono />
+      <DetailRow label="Not Before" value={decoded.notBefore} />
+      <DetailRow label="Not After" value={decoded.notAfter} />
+      <DetailRow label="Signature Algorithm" value={decoded.signatureAlgorithm} />
+      <DetailRow label="Public Key" value={decoded.publicKeyAlgorithm} />
       {decoded.sanDns.length > 0 && (
-        <div className="decoded-row">
-          <span className="decoded-label">SAN (DNS)</span>
-          <span className="decoded-value">{decoded.sanDns.join(', ')}</span>
-        </div>
+        <DetailRow label="SAN (DNS)" value={decoded.sanDns.join(', ')} />
       )}
       {decoded.crlDistributionPoints.length > 0 && (
-        <div className="decoded-row">
-          <span className="decoded-label">CRL Distribution</span>
-          <span className="decoded-value mono">{decoded.crlDistributionPoints.join(', ')}</span>
-        </div>
+        <DetailRow label="CRL Distribution" value={decoded.crlDistributionPoints.join(', ')} mono />
       )}
-    </div>
+    </dl>
   );
 }
 
 function JWTDecodedView({ jwt }: { jwt: string }) {
   const decoded = useMemo(() => decodeJWT(jwt), [jwt]);
-  if (!decoded) return <p className="decode-error">Unable to decode JWT</p>;
+  if (!decoded) return <p className="text-sm text-destructive">Unable to decode JWT</p>;
 
   const { header, payload } = decoded;
 
@@ -88,122 +89,68 @@ function JWTDecodedView({ jwt }: { jwt: string }) {
   const hasX5c = Array.isArray(header.x5c) && header.x5c.length > 0;
 
   return (
-    <div className="decoded-grid">
-      <div className="decoded-row">
-        <span className="decoded-label">Header</span>
-        <span className="decoded-value mono">{headerSummary}{hasX5c ? `, x5c[${header.x5c.length}]` : ''}</span>
-      </div>
-      {payload.iss && (
-        <div className="decoded-row">
-          <span className="decoded-label">Issuer (iss)</span>
-          <span className="decoded-value">{payload.iss}</span>
-        </div>
-      )}
-      {payload.sub && (
-        <div className="decoded-row">
-          <span className="decoded-label">Subject (sub)</span>
-          <span className="decoded-value mono">{payload.sub}</span>
-        </div>
-      )}
-      {payload.jti && (
-        <div className="decoded-row">
-          <span className="decoded-label">JWT ID (jti)</span>
-          <span className="decoded-value mono">{payload.jti}</span>
-        </div>
-      )}
+    <dl className="divide-y divide-border rounded-md border border-border px-4">
+      <DetailRow
+        label="Header"
+        value={`${headerSummary}${hasX5c ? `, x5c[${header.x5c.length}]` : ''}`}
+        mono
+      />
+      {payload.iss && <DetailRow label="Issuer (iss)" value={payload.iss} />}
+      {payload.sub && <DetailRow label="Subject (sub)" value={payload.sub} mono />}
+      {payload.jti && <DetailRow label="JWT ID (jti)" value={payload.jti} mono />}
       {payload.iat && (
-        <div className="decoded-row">
-          <span className="decoded-label">Issued At</span>
-          <span className="decoded-value">{new Date(payload.iat * 1000).toISOString()}</span>
-        </div>
+        <DetailRow label="Issued At" value={new Date(payload.iat * 1000).toISOString()} />
       )}
-      {payload.name && (
-        <div className="decoded-row">
-          <span className="decoded-label">Name</span>
-          <span className="decoded-value">{payload.name}</span>
-        </div>
-      )}
-      {payload.legal_name && (
-        <div className="decoded-row">
-          <span className="decoded-label">Legal Name</span>
-          <span className="decoded-value">{payload.legal_name}</span>
-        </div>
-      )}
-      {payload.country && (
-        <div className="decoded-row">
-          <span className="decoded-label">Country</span>
-          <span className="decoded-value">{payload.country}</span>
-        </div>
-      )}
-      {payload.registry_uri && (
-        <div className="decoded-row">
-          <span className="decoded-label">Registry URI</span>
-          <span className="decoded-value mono">{payload.registry_uri}</span>
-        </div>
-      )}
+      {payload.name && <DetailRow label="Name" value={payload.name} />}
+      {payload.legal_name && <DetailRow label="Legal Name" value={payload.legal_name} />}
+      {payload.country && <DetailRow label="Country" value={payload.country} />}
+      {payload.registry_uri && <DetailRow label="Registry URI" value={payload.registry_uri} mono />}
       {payload.entitlements && (
-        <div className="decoded-row">
-          <span className="decoded-label">Entitlements</span>
-          <span className="decoded-value">
-            {(Array.isArray(payload.entitlements) ? payload.entitlements : [payload.entitlements])
-              .map((e: string) => e.split('/').pop())
-              .join(', ')}
-          </span>
-        </div>
+        <DetailRow
+          label="Entitlements"
+          value={(Array.isArray(payload.entitlements) ? payload.entitlements : [payload.entitlements])
+            .map((e: string) => e.split('/').pop())
+            .join(', ')}
+        />
       )}
-      {payload.support_uri && (
-        <div className="decoded-row">
-          <span className="decoded-label">Support URI</span>
-          <span className="decoded-value">{payload.support_uri}</span>
-        </div>
-      )}
+      {payload.support_uri && <DetailRow label="Support URI" value={payload.support_uri} />}
       {payload.privacy_policy && (
-        <div className="decoded-row">
-          <span className="decoded-label">Privacy Policy</span>
-          <span className="decoded-value">{payload.privacy_policy}</span>
-        </div>
+        <DetailRow label="Privacy Policy" value={payload.privacy_policy} />
       )}
-      {payload.isPSB !== undefined && (
-        <div className="decoded-row">
-          <span className="decoded-label">Is PSB</span>
-          <span className="decoded-value">{String(payload.isPSB)}</span>
-        </div>
-      )}
+      {payload.isPSB !== undefined && <DetailRow label="Is PSB" value={String(payload.isPSB)} />}
       {payload.intermediary && (
-        <div className="decoded-row">
-          <span className="decoded-label">Intermediary</span>
-          <span className="decoded-value">{payload.intermediary.sname} ({payload.intermediary.sub})</span>
-        </div>
+        <DetailRow
+          label="Intermediary"
+          value={`${payload.intermediary.sname} (${payload.intermediary.sub})`}
+        />
       )}
       {payload.dpa && (
-        <div className="decoded-row">
-          <span className="decoded-label">DPA</span>
-          <span className="decoded-value">
-            {[payload.dpa.uri, payload.dpa.email, payload.dpa.phone].filter(Boolean).join(' | ')}
-          </span>
-        </div>
+        <DetailRow
+          label="DPA"
+          value={[payload.dpa.uri, payload.dpa.email, payload.dpa.phone].filter(Boolean).join(' | ')}
+        />
       )}
       {payload.purpose && (
-        <div className="decoded-row">
-          <span className="decoded-label">Purpose</span>
-          <span className="decoded-value">
-            {Array.isArray(payload.purpose)
+        <DetailRow
+          label="Purpose"
+          value={
+            Array.isArray(payload.purpose)
               ? payload.purpose.map((p: any) => p.content || p).join('; ')
-              : String(payload.purpose)}
-          </span>
-        </div>
+              : String(payload.purpose)
+          }
+        />
       )}
       {payload.srvDescription && (
-        <div className="decoded-row">
-          <span className="decoded-label">Service Description</span>
-          <span className="decoded-value">
-            {Array.isArray(payload.srvDescription)
+        <DetailRow
+          label="Service Description"
+          value={
+            Array.isArray(payload.srvDescription)
               ? payload.srvDescription.map((d: any) => d.content || d).join('; ')
-              : String(payload.srvDescription)}
-          </span>
-        </div>
+              : String(payload.srvDescription)
+          }
+        />
       )}
-    </div>
+    </dl>
   );
 }
 
@@ -408,408 +355,564 @@ export default function RPDetail() {
     }
   };
 
-  if (loading) return <div className="page"><p className="loading">Loading...</p></div>;
-  if (!rp) return <div className="page"><p className="empty">Relying party not found.</p></div>;
+  const backLink = (
+    <Link
+      to="/dashboard"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+    >
+      <ArrowLeft className="size-4" />
+      Back to Dashboard
+    </Link>
+  );
+
+  if (loading) {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        {backLink}
+        <div className="mt-6 space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!rp) {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        {backLink}
+        <p className="mt-8 text-sm text-muted-foreground">Relying party not found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="page">
-      <div className="detail-header">
-        <div>
-          <h1>{rp.tradeName || rp.legalName}</h1>
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      {backLink}
+
+      {/* Header */}
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight break-words">
+            {rp.tradeName || rp.legalName}
+          </h1>
           {rp.legalName && rp.tradeName && (
-            <p className="legal-name">{rp.legalName}</p>
+            <p className="text-sm text-muted-foreground">{rp.legalName}</p>
           )}
-          <div className="rp-tags">
-            {rp.isIntermediary && <span className="tag tag-blue">Intermediary</span>}
-            {rp.isPSB && <span className="tag tag-green">PSB</span>}
-            {rp.usesIntermediary?.length > 0 && (
-              <span className="tag tag-purple">Uses Intermediary</span>
-            )}
+          <div className="flex flex-wrap gap-2">
+            {rp.isIntermediary && <Badge variant="secondary">Intermediary</Badge>}
+            {rp.isPSB && <Badge variant="success">PSB</Badge>}
+            {rp.usesIntermediary?.length > 0 && <Badge variant="outline">Uses Intermediary</Badge>}
           </div>
         </div>
         {token && (
-          <div className="detail-header-actions">
-            <button className="btn btn-danger" onClick={handleDelete}>
+          <div className="shrink-0">
+            <Button variant="destructive" className="w-full sm:w-auto" onClick={handleDelete}>
+              <Trash2 className="size-4" />
               Delete RP
-            </button>
+            </Button>
           </div>
         )}
       </div>
 
       {message && (
-        <div className={`alert ${message.startsWith('Error') ? 'alert-error' : 'alert-success'}`}>
-          {message}
-        </div>
+        <Alert
+          variant={message.startsWith('Error') ? 'destructive' : 'success'}
+          className="mt-6"
+        >
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
       )}
 
-      {/* RP Info */}
-      <section className="section">
-        <h2>Information</h2>
-        <div className="info-grid">
-          <div className="info-item">
-            <span className="info-label">Registry URI</span>
-            <span className="info-value">{rp.registryURI}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Identifiers</span>
-            <span className="info-value">
-              {rp.identifier?.map((id: any, i: number) => (
-                <span key={i}>{id.type}: {id.value}</span>
-              ))}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Email</span>
-            <span className="info-value">{rp.email || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Phone</span>
-            <span className="info-value">{rp.phone || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Support</span>
-            <span className="info-value">{rp.supportURI?.join(', ') || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Description</span>
-            <span className="info-value">
-              {rp.srvDescription?.[0]?.content || '-'}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Entitlements</span>
-            <span className="info-value">
-              {rp.entitlement?.map((e: string) => e.split('/').pop()).join(', ') || '-'}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Supervisory Authority</span>
-            <span className="info-value">
-              {rp.supervisoryAuthority?.legalName || '-'}
-            </span>
-          </div>
-          {rp.usesIntermediary?.length > 0 && (
-            <div className="info-item">
-              <span className="info-label">Intermediary</span>
-              <span className="info-value">
-                {rp.usesIntermediary.map((inter: any, i: number) => (
-                  <span key={i}>
-                    {inter.tradeName} ({inter.identifier?.[0]?.value})
-                  </span>
+      <Tabs defaultValue="overview" className="mt-6">
+        <div className="overflow-x-auto pb-1">
+          <TabsList className="w-max">
+            <TabsTrigger value="overview">
+              <FileText className="size-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="access">
+              <ShieldCheck className="size-4" />
+              Access Certs
+              <Badge variant="secondary" className="ml-1">
+                {accessCerts.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="registration">
+              <KeyRound className="size-4" />
+              Registration Certs
+              <Badge variant="secondary" className="ml-1">
+                {regCerts.length}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* ---------------- Overview ---------------- */}
+        <TabsContent value="overview" className="mt-4 space-y-6">
+          {/* RP Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="divide-y divide-border">
+                <DetailRow label="Registry URI" value={rp.registryURI} mono />
+                <DetailRow
+                  label="Identifiers"
+                  value={
+                    <span className="flex flex-col gap-0.5">
+                      {rp.identifier?.map((id: any, i: number) => (
+                        <span key={i}>
+                          {id.type}: {id.value}
+                        </span>
+                      ))}
+                    </span>
+                  }
+                />
+                <DetailRow label="Email" value={rp.email || '-'} />
+                <DetailRow label="Phone" value={rp.phone || '-'} />
+                <DetailRow label="Support" value={rp.supportURI?.join(', ') || '-'} />
+                <DetailRow label="Description" value={rp.srvDescription?.[0]?.content || '-'} />
+                <DetailRow
+                  label="Entitlements"
+                  value={rp.entitlement?.map((e: string) => e.split('/').pop()).join(', ') || '-'}
+                />
+                <DetailRow
+                  label="Supervisory Authority"
+                  value={rp.supervisoryAuthority?.legalName || '-'}
+                />
+                {rp.usesIntermediary?.length > 0 && (
+                  <DetailRow
+                    label="Intermediary"
+                    value={
+                      <span className="flex flex-col gap-0.5">
+                        {rp.usesIntermediary.map((inter: any, i: number) => (
+                          <span key={i}>
+                            {inter.tradeName} ({inter.identifier?.[0]?.value})
+                          </span>
+                        ))}
+                      </span>
+                    }
+                  />
+                )}
+              </dl>
+            </CardContent>
+          </Card>
+
+          {/* Intended Use */}
+          {rp.intendedUse?.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Intended Uses</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {rp.intendedUse.map((iu: any, i: number) => (
+                  <div
+                    key={i}
+                    className="space-y-1 rounded-lg border border-border p-4 text-sm"
+                  >
+                    <p className="break-words">
+                      <span className="font-medium">Purpose:</span> {iu.purpose?.[0]?.content}
+                    </p>
+                    <p className="break-all">
+                      <span className="font-medium">Privacy Policy:</span>{' '}
+                      {iu.privacyPolicy?.[0]?.uri}
+                    </p>
+                    <p className="break-words">
+                      <span className="font-medium">Credentials:</span>{' '}
+                      {iu.credential?.map((c: any) => c.format).join(', ')}
+                    </p>
+                    {iu.intendedUseIdentifier && (
+                      <p className="font-mono text-xs text-muted-foreground break-all">
+                        ID: {iu.intendedUseIdentifier}
+                      </p>
+                    )}
+                  </div>
                 ))}
-              </span>
-            </div>
+              </CardContent>
+            </Card>
           )}
-        </div>
-      </section>
+        </TabsContent>
 
-      {/* Intended Use */}
-      {rp.intendedUse?.length > 0 && (
-        <section className="section">
-          <h2>Intended Uses</h2>
-          {rp.intendedUse.map((iu: any, i: number) => (
-            <div key={i} className="intended-use-card">
-              <p><strong>Purpose:</strong> {iu.purpose?.[0]?.content}</p>
-              <p><strong>Privacy Policy:</strong> {iu.privacyPolicy?.[0]?.uri}</p>
-              <p><strong>Credentials:</strong> {iu.credential?.map((c: any) => c.format).join(', ')}</p>
-              {iu.intendedUseIdentifier && (
-                <p className="iu-id">ID: {iu.intendedUseIdentifier}</p>
-              )}
+        {/* ---------------- Access Certificates ---------------- */}
+        <TabsContent value="access" className="mt-4 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">Access Certificates</h2>
+              <p className="text-sm text-muted-foreground">
+                {usesIntermediary
+                  ? 'Access certificates are managed by your intermediary.'
+                  : 'X.509 certificates for mTLS access. A fresh EC P-256 key pair is generated for each certificate.'}
+              </p>
             </div>
-          ))}
-        </section>
-      )}
+            {token && (
+              <Button
+                className="w-full shrink-0 sm:w-auto"
+                onClick={showAccessForm ? () => setShowAccessForm(false) : openAccessForm}
+                disabled={creating !== null || usesIntermediary}
+              >
+                {showAccessForm ? (
+                  'Cancel'
+                ) : (
+                  <>
+                    <Plus className="size-4" />
+                    Create Access Cert
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
 
-      {/* Access Certificates */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Access Certificates</h2>
-          {token && (
-            <button
-              className="btn btn-primary"
-              onClick={showAccessForm ? () => setShowAccessForm(false) : openAccessForm}
-              disabled={creating !== null || usesIntermediary}
+          {/* Access Cert Form */}
+          {showAccessForm && (
+            <form
+              className="rounded-xl border border-border bg-card shadow-sm"
+              onSubmit={handleCreateAccessCert}
             >
-              {showAccessForm ? 'Cancel' : 'Create Access Cert'}
-            </button>
+              <div className="flex items-center justify-between gap-2 border-b border-border px-6 py-4">
+                <h3 className="font-semibold">Create Access Certificate</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={prefillAccessForm}>
+                  <RefreshCw className="size-4" />
+                  Prefill
+                </Button>
+              </div>
+              <div className="space-y-4 p-6">
+                <div className="space-y-2">
+                  <Label htmlFor="accessDns">DNS Entries (comma-separated)</Label>
+                  <Input
+                    id="accessDns"
+                    value={accessDns}
+                    onChange={(e) => setAccessDns(e.target.value)}
+                    placeholder="verify.hopae.com, api.example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accessPubKey">Public Key (EC P-256 PEM)</Label>
+                  <Textarea
+                    id="accessPubKey"
+                    className="font-mono text-xs"
+                    value={accessPubKey}
+                    onChange={(e) => setAccessPubKey(e.target.value)}
+                    rows={5}
+                    placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setShowAccessForm(false)}
+                  disabled={creating !== null}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="w-full sm:w-auto"
+                  disabled={creating !== null || !accessPubKey}
+                >
+                  {creating === 'access' ? 'Creating...' : 'Create Certificate'}
+                </Button>
+              </div>
+            </form>
           )}
-        </div>
-        <p className="subtitle">
-          {usesIntermediary
-            ? 'Access certificates are managed by your intermediary.'
-            : 'X.509 certificates for mTLS access. A fresh EC P-256 key pair is generated for each certificate.'}
-        </p>
 
-        {/* Access Cert Form */}
-        {showAccessForm && (
-          <form className="form-panel" onSubmit={handleCreateAccessCert}>
-            <div className="form-panel-header">
-              <h3>Create Access Certificate</h3>
-              <button type="button" className="btn btn-sm text-link-sm" onClick={prefillAccessForm}>Prefill</button>
+          {accessCerts.length === 0 && !showAccessForm ? (
+            <p className="text-sm text-muted-foreground">No access certificates.</p>
+          ) : (
+            <div className="space-y-4">
+              {accessCerts.map((cert: any) => (
+                <Card
+                  key={cert.id}
+                  className={cn(cert.revokedAt && 'border-destructive/30 bg-muted/30')}
+                >
+                  <CardHeader>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs break-all">Serial: {cert.id}</span>
+                        {cert.revokedAt ? (
+                          <Badge variant="destructive">Revoked</Badge>
+                        ) : (
+                          <Badge variant="success">Active</Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={() =>
+                            setExpandedCert(expandedCert === cert.id ? null : cert.id)
+                          }
+                        >
+                          {expandedCert === cert.id ? 'Hide' : 'Show'} Raw PEM
+                        </Button>
+                        {token && !cert.revokedAt && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handleRevokeAccessCert(cert.id)}
+                          >
+                            <Trash2 className="size-4" />
+                            Revoke
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
+                      {cert.dns?.length > 0 && <span>DNS: {cert.dns.join(', ')}</span>}
+                    </div>
+                    {/* Decoded X.509 info */}
+                    {cert.certificate && <X509DecodedView pem={cert.certificate} />}
+                    {expandedCert === cert.id && (
+                      <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs font-mono">
+                        {cert.certificate}
+                      </pre>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-            <div className="form-grid">
-              <div className="form-group form-full">
-                <label>DNS Entries (comma-separated)</label>
-                <input
-                  value={accessDns}
-                  onChange={(e) => setAccessDns(e.target.value)}
-                  placeholder="verify.hopae.com, api.example.com"
-                />
-              </div>
-              <div className="form-group form-full">
-                <label>Public Key (EC P-256 PEM)</label>
-                <textarea
-                  value={accessPubKey}
-                  onChange={(e) => setAccessPubKey(e.target.value)}
-                  rows={5}
-                  placeholder="-----BEGIN PUBLIC KEY-----&#10;...&#10;-----END PUBLIC KEY-----"
-                />
-              </div>
+          )}
+        </TabsContent>
+
+        {/* ---------------- Registration Certificates ---------------- */}
+        <TabsContent value="registration" className="mt-4 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">Registration Certificates</h2>
+              <p className="text-sm text-muted-foreground">
+                JWT-based registration certificates (rc-wrp+jwt) signed with ES256.
+              </p>
             </div>
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowAccessForm(false)}
+            {token && (
+              <Button
+                className="w-full shrink-0 sm:w-auto"
+                onClick={showRegForm ? () => setShowRegForm(false) : openRegForm}
                 disabled={creating !== null}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={creating !== null || !accessPubKey}
-              >
-                {creating === 'access' ? 'Creating...' : 'Create Certificate'}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {accessCerts.length === 0 && !showAccessForm ? (
-          <p className="empty">No access certificates.</p>
-        ) : (
-          <div className="cert-list">
-            {accessCerts.map((cert: any) => (
-              <div key={cert.id} className={`cert-card ${cert.revokedAt ? 'cert-revoked' : ''}`}>
-                <div className="cert-header">
-                  <div>
-                    <span className="cert-id">Serial: {cert.id}</span>
-                    {cert.revokedAt && (
-                      <span className="tag tag-red">Revoked</span>
-                    )}
-                  </div>
-                  <div className="cert-actions">
-                    <button
-                      className="btn btn-sm"
-                      onClick={() =>
-                        setExpandedCert(expandedCert === cert.id ? null : cert.id)
-                      }
-                    >
-                      {expandedCert === cert.id ? 'Hide' : 'Show'} Raw PEM
-                    </button>
-                    {token && !cert.revokedAt && (
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleRevokeAccessCert(cert.id)}
-                      >
-                        Revoke
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="cert-meta">
-                  <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
-                  {cert.dns?.length > 0 && (
-                    <span>DNS: {cert.dns.join(', ')}</span>
-                  )}
-                </div>
-                {/* Decoded X.509 info */}
-                {cert.certificate && <X509DecodedView pem={cert.certificate} />}
-                {expandedCert === cert.id && (
-                  <pre className="cert-pem">{cert.certificate}</pre>
+                {showRegForm ? (
+                  'Cancel'
+                ) : (
+                  <>
+                    <Plus className="size-4" />
+                    Create Registration Cert
+                  </>
                 )}
-              </div>
-            ))}
+              </Button>
+            )}
           </div>
-        )}
-      </section>
 
-      {/* Registration Certificates */}
-      <section className="section">
-        <div className="section-header">
-          <h2>Registration Certificates</h2>
-          {token && (
-            <button
-              className="btn btn-primary"
-              onClick={showRegForm ? () => setShowRegForm(false) : openRegForm}
-              disabled={creating !== null}
+          {/* Registration Cert Form */}
+          {showRegForm && (
+            <form
+              className="rounded-xl border border-border bg-card shadow-sm"
+              onSubmit={handleCreateRegCert}
             >
-              {showRegForm ? 'Cancel' : 'Create Registration Cert'}
-            </button>
-          )}
-        </div>
-        <p className="subtitle">
-          JWT-based registration certificates (rc-wrp+jwt) signed with ES256.
-        </p>
-
-        {/* Registration Cert Form */}
-        {showRegForm && (
-          <form className="form-panel" onSubmit={handleCreateRegCert}>
-            <div className="form-panel-header">
-              <h3>Create Registration Certificate</h3>
-              <button type="button" className="btn btn-sm text-link-sm" onClick={prefillRegForm}>Prefill</button>
-            </div>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Support URI</label>
-                <input
-                  value={regSupportUri}
-                  onChange={(e) => setRegSupportUri(e.target.value)}
-                  required
-                />
+              <div className="flex items-center justify-between gap-2 border-b border-border px-6 py-4">
+                <h3 className="font-semibold">Create Registration Certificate</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={prefillRegForm}>
+                  <RefreshCw className="size-4" />
+                  Prefill
+                </Button>
               </div>
-              <div className="form-group">
-                <label>Privacy Policy URI</label>
-                <input
-                  value={regPrivacyPolicy}
-                  onChange={(e) => setRegPrivacyPolicy(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-section-title">Purpose</div>
-              <div className="form-group">
-                <label>Language</label>
-                <input
-                  value={regPurposeLang}
-                  onChange={(e) => setRegPurposeLang(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Content</label>
-                <input
-                  value={regPurposeContent}
-                  onChange={(e) => setRegPurposeContent(e.target.value)}
-                />
-              </div>
-
-              <div className="form-section-title">Credentials</div>
-              <div className="form-group form-full">
-                <div className="credential-presets">
-                  <button
-                    type="button"
-                    className={`credential-preset-card ${regCredentialPreset === 'pid' ? 'credential-preset-active' : ''}`}
-                    onClick={() => applyCredentialPreset('pid')}
-                  >
-                    <span className="credential-preset-title">PID</span>
-                    <span className="credential-preset-desc">Name, birth date, address</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`credential-preset-card ${regCredentialPreset === 'ageVerification' ? 'credential-preset-active' : ''}`}
-                    onClick={() => applyCredentialPreset('ageVerification')}
-                  >
-                    <span className="credential-preset-title">Age Verification</span>
-                    <span className="credential-preset-desc">Age over 18 check</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`credential-preset-card ${regCredentialPreset === 'custom' ? 'credential-preset-active' : ''}`}
-                    onClick={() => applyCredentialPreset('custom')}
-                  >
-                    <span className="credential-preset-title">Custom</span>
-                    <span className="credential-preset-desc">Define your own claims</span>
-                  </button>
-                </div>
-                <textarea
-                  className="json-textarea"
-                  value={regCredentials}
-                  onChange={(e) => setRegCredentials(e.target.value)}
-                  readOnly={!regCredentialCustom}
-                />
-              </div>
-
-              {usesIntermediary && (
-                <>
-                  <div className="form-section-title">Intermediary</div>
-                  <div className="form-group form-full">
-                    <label>Intermediary RP ID</label>
-                    <input
-                      value={regIntermediary}
-                      readOnly
+              <div className="space-y-4 p-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="regSupportUri">Support URI</Label>
+                    <Input
+                      id="regSupportUri"
+                      value={regSupportUri}
+                      onChange={(e) => setRegSupportUri(e.target.value)}
+                      required
                     />
                   </div>
-                </>
-              )}
-            </div>
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowRegForm(false)}
-                disabled={creating !== null}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={creating !== null}
-              >
-                {creating === 'registration' ? 'Creating...' : 'Create Certificate'}
-              </button>
-            </div>
-          </form>
-        )}
+                  <div className="space-y-2">
+                    <Label htmlFor="regPrivacyPolicy">Privacy Policy URI</Label>
+                    <Input
+                      id="regPrivacyPolicy"
+                      value={regPrivacyPolicy}
+                      onChange={(e) => setRegPrivacyPolicy(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
 
-        {regCerts.length === 0 && !showRegForm ? (
-          <p className="empty">No registration certificates.</p>
-        ) : (
-          <div className="cert-list">
-            {regCerts.map((cert: any) => (
-              <div key={cert.id} className={`cert-card ${cert.revokedAt ? 'cert-revoked' : ''}`}>
-                <div className="cert-header">
-                  <div>
-                    <span className="cert-id">ID: {cert.id}</span>
-                    {cert.revokedAt && (
-                      <span className="tag tag-red">Revoked</span>
-                    )}
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground">Purpose</h4>
+                  <div className="mt-2 grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="regPurposeLang">Language</Label>
+                      <Input
+                        id="regPurposeLang"
+                        value={regPurposeLang}
+                        onChange={(e) => setRegPurposeLang(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="regPurposeContent">Content</Label>
+                      <Input
+                        id="regPurposeContent"
+                        value={regPurposeContent}
+                        onChange={(e) => setRegPurposeContent(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="cert-actions">
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground">Credentials</h4>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
                     <button
-                      className="btn btn-sm"
-                      onClick={() =>
-                        setExpandedCert(
-                          expandedCert === `reg-${cert.id}` ? null : `reg-${cert.id}`,
-                        )
-                      }
+                      type="button"
+                      className={cn(
+                        'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
+                        regCredentialPreset === 'pid'
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                          : 'border-border',
+                      )}
+                      onClick={() => applyCredentialPreset('pid')}
                     >
-                      {expandedCert === `reg-${cert.id}` ? 'Hide' : 'Show'} Raw JWT
+                      <span className="text-sm font-medium">PID</span>
+                      <span className="text-xs text-muted-foreground">
+                        Name, birth date, address
+                      </span>
                     </button>
-                    {token && !cert.revokedAt && (
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleRevokeRegCert(cert.id)}
-                      >
-                        Revoke
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className={cn(
+                        'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
+                        regCredentialPreset === 'ageVerification'
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                          : 'border-border',
+                      )}
+                      onClick={() => applyCredentialPreset('ageVerification')}
+                    >
+                      <span className="text-sm font-medium">Age Verification</span>
+                      <span className="text-xs text-muted-foreground">Age over 18 check</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
+                        regCredentialPreset === 'custom'
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                          : 'border-border',
+                      )}
+                      onClick={() => applyCredentialPreset('custom')}
+                    >
+                      <span className="text-sm font-medium">Custom</span>
+                      <span className="text-xs text-muted-foreground">Define your own claims</span>
+                    </button>
                   </div>
+                  <Textarea
+                    className="mt-2 min-h-40 font-mono text-xs"
+                    value={regCredentials}
+                    onChange={(e) => setRegCredentials(e.target.value)}
+                    readOnly={!regCredentialCustom}
+                  />
                 </div>
-                <div className="cert-meta">
-                  <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
-                </div>
-                {/* Decoded JWT info */}
-                {cert.jwt && <JWTDecodedView jwt={cert.jwt} />}
-                {expandedCert === `reg-${cert.id}` && (
-                  <pre className="cert-pem">{cert.jwt}</pre>
+
+                {usesIntermediary && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-muted-foreground">Intermediary</h4>
+                    <div className="mt-2 space-y-2">
+                      <Label htmlFor="regIntermediary">Intermediary RP ID</Label>
+                      <Input id="regIntermediary" value={regIntermediary} readOnly />
+                    </div>
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <div className="flex flex-col gap-2 border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setShowRegForm(false)}
+                  disabled={creating !== null}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="w-full sm:w-auto" disabled={creating !== null}>
+                  {creating === 'registration' ? 'Creating...' : 'Create Certificate'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {regCerts.length === 0 && !showRegForm ? (
+            <p className="text-sm text-muted-foreground">No registration certificates.</p>
+          ) : (
+            <div className="space-y-4">
+              {regCerts.map((cert: any) => (
+                <Card
+                  key={cert.id}
+                  className={cn(cert.revokedAt && 'border-destructive/30 bg-muted/30')}
+                >
+                  <CardHeader>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs break-all">ID: {cert.id}</span>
+                        {cert.revokedAt ? (
+                          <Badge variant="destructive">Revoked</Badge>
+                        ) : (
+                          <Badge variant="success">Active</Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={() =>
+                            setExpandedCert(
+                              expandedCert === `reg-${cert.id}` ? null : `reg-${cert.id}`,
+                            )
+                          }
+                        >
+                          {expandedCert === `reg-${cert.id}` ? 'Hide' : 'Show'} Raw JWT
+                        </Button>
+                        {token && !cert.revokedAt && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => handleRevokeRegCert(cert.id)}
+                          >
+                            <Trash2 className="size-4" />
+                            Revoke
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>Issued: {new Date(cert.issuedAt).toLocaleDateString()}</span>
+                    </div>
+                    {/* Decoded JWT info */}
+                    {cert.jwt && <JWTDecodedView jwt={cert.jwt} />}
+                    {expandedCert === `reg-${cert.id}` && (
+                      <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs font-mono">
+                        {cert.jwt}
+                      </pre>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

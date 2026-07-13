@@ -1,9 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Check, CheckCircle2, Loader2, Mail, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { signUp } from '../api/client';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type Step = 'signup' | 'id-validation' | 'file-upload' | 'contact';
+
+const STEPS = ['Account', 'ID Validation', 'Documents', 'Review'];
+
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <div className="mb-6 flex items-center justify-center">
+      {STEPS.map((label, i) => (
+        <div key={label} className="flex items-center">
+          <div
+            className={cn(
+              'flex size-8 items-center justify-center rounded-full border text-xs font-medium transition-colors',
+              i < current && 'border-primary bg-primary text-primary-foreground',
+              i === current && 'border-primary text-primary',
+              i > current && 'border-border text-muted-foreground',
+            )}
+          >
+            {i < current ? <Check className="size-4" /> : i + 1}
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className={cn('h-px w-6 sm:w-10', i < current ? 'bg-primary' : 'bg-border')} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function SignUp() {
   const [step, setStep] = useState<Step>('signup');
@@ -95,242 +135,239 @@ export default function SignUp() {
 
   if (step === 'id-validation') {
     return (
-      <div className="page auth-page">
-        <div className="auth-card">
-          <div className="step-indicator">
-            <div className="step-dot step-done" />
-            <div className="step-line step-line-done" />
-            <div className="step-dot step-active" />
-            <div className="step-line" />
-            <div className="step-dot" />
-            <div className="step-line" />
-            <div className="step-dot" />
-          </div>
-          <h1>ID Validation</h1>
-          <p className="step-desc">
-            Verify your identity to proceed with business registration.
-          </p>
+      <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-md flex-col justify-center px-4 py-10">
+        <StepIndicator current={1} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">ID Validation</CardTitle>
+            <CardDescription>
+              Verify your identity to proceed with business registration.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!validating && !validated && (
+              <Button className="w-full" onClick={startValidation}>
+                Validate ID
+              </Button>
+            )}
 
-          {!validating && !validated && (
-            <button
-              className="btn btn-primary btn-full"
-              onClick={startValidation}
-            >
-              Validate ID
-            </button>
-          )}
-
-          {validating && (
-            <div className="validation-box">
-              <div className="spinner" />
-              <p className="validation-status">Validating your identity...</p>
-              <div className="countdown-bar">
-                <div
-                  className="countdown-fill"
-                  style={{ width: `${(countdown / 60) * 100}%` }}
-                />
+            {validating && (
+              <div className="flex flex-col items-center gap-4 rounded-lg border border-border bg-muted/30 px-6 py-8 text-center">
+                <Loader2 className="size-8 animate-spin text-primary" />
+                <p className="text-sm font-medium">Validating your identity...</p>
+                <div className="w-full space-y-2">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-1000 ease-linear"
+                      style={{ width: `${(countdown / 60) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Expires in{' '}
+                    <span className="font-medium tabular-nums text-foreground">
+                      {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
+                    </span>
+                  </p>
+                </div>
               </div>
-              <p className="countdown-text">
-                Expires in{' '}
-                <span className="countdown-num">
-                  {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
-                </span>
-              </p>
-            </div>
-          )}
+            )}
 
-          {validated && (
-            <div className="validation-box validation-approved">
-              <div className="approved-icon">&#10003;</div>
-              <p className="validation-status">Identity Verified</p>
-              <p className="validation-sub">
-                Your ID has been successfully validated.
-              </p>
-              <button
-                className="btn btn-primary btn-full"
-                style={{ marginTop: 16 }}
-                onClick={() => setStep('file-upload')}
-              >
-                Continue
-              </button>
-            </div>
-          )}
-        </div>
+            {validated && (
+              <div className="flex flex-col items-center gap-3 rounded-lg border border-success/40 bg-success/5 px-6 py-8 text-center">
+                <span className="flex size-12 items-center justify-center rounded-full bg-success/10 text-success">
+                  <CheckCircle2 className="size-6" />
+                </span>
+                <p className="text-sm font-medium">Identity Verified</p>
+                <p className="text-xs text-muted-foreground">
+                  Your ID has been successfully validated.
+                </p>
+                <Button className="mt-2 w-full" onClick={() => setStep('file-upload')}>
+                  Continue
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (step === 'file-upload') {
     return (
-      <div className="page auth-page">
-        <div className="auth-card">
-          <div className="step-indicator">
-            <div className="step-dot step-done" />
-            <div className="step-line step-line-done" />
-            <div className="step-dot step-done" />
-            <div className="step-line step-line-done" />
-            <div className="step-dot step-active" />
-            <div className="step-line" />
-            <div className="step-dot" />
-          </div>
-          <h1>Business Registration</h1>
-          <p className="step-desc">
-            Upload your business registration document for verification.
-          </p>
-
-          {uploading ? (
-            <div className="file-uploading">
-              <p className="file-uploading-name">Uploading...</p>
-              <div className="file-progress-bar">
-                <div className="file-progress-fill" />
+      <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-md flex-col justify-center px-4 py-10">
+        <StepIndicator current={2} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Business Registration</CardTitle>
+            <CardDescription>
+              Upload your business registration document for verification.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {uploading ? (
+              <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-muted/30 px-6 py-8 text-center">
+                <p className="text-sm font-medium">Uploading...</p>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground">Please wait</p>
               </div>
-              <p className="file-uploading-text">Please wait</p>
-            </div>
-          ) : !uploadedFile ? (
-            <div
-              className="file-drop-zone"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById('file-input')?.click()}
-            >
-              <div className="file-drop-icon">&#128196;</div>
-              <p className="file-drop-text">
-                Drag & drop your file here, or click to browse
-              </p>
-              <p className="file-drop-hint">
-                PDF, JPG, or PNG up to 10MB
-              </p>
-              <input
-                id="file-input"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                style={{ display: 'none' }}
-                onChange={handleFileSelect}
-              />
-            </div>
-          ) : (
-            <div className="file-uploaded">
-              <div className="file-uploaded-icon">&#10003;</div>
-              <p className="file-uploaded-name">{uploadedFile}</p>
-              <p className="file-uploaded-status">File uploaded successfully</p>
-              <button
-                className="btn btn-primary btn-full"
-                style={{ marginTop: 16 }}
-                onClick={() => setStep('contact')}
+            ) : !uploadedFile ? (
+              <div
+                className="flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-muted/50"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('file-input')?.click()}
               >
-                Submit
-              </button>
-            </div>
-          )}
-        </div>
+                <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Upload className="size-6" />
+                </span>
+                <p className="text-sm font-medium">
+                  Drag &amp; drop your file here, or click to browse
+                </p>
+                <p className="text-xs text-muted-foreground">PDF, JPG, or PNG up to 10MB</p>
+                <input
+                  id="file-input"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 rounded-lg border border-success/40 bg-success/5 px-6 py-8 text-center">
+                <span className="flex size-12 items-center justify-center rounded-full bg-success/10 text-success">
+                  <CheckCircle2 className="size-6" />
+                </span>
+                <p className="text-sm font-medium">{uploadedFile}</p>
+                <p className="text-xs text-muted-foreground">File uploaded successfully</p>
+                <Button className="mt-2 w-full" onClick={() => setStep('contact')}>
+                  Submit
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (step === 'contact') {
     return (
-      <div className="page auth-page">
-        <div className="auth-card">
-          <div className="step-indicator">
-            <div className="step-dot step-done" />
-            <div className="step-line step-line-done" />
-            <div className="step-dot step-done" />
-            <div className="step-line step-line-done" />
-            <div className="step-dot step-done" />
-            <div className="step-line step-line-done" />
-            <div className="step-dot step-active" />
-          </div>
-          <h1>Under Review</h1>
-          <div className="contact-box">
-            <div className="contact-icon">&#128231;</div>
-            <p className="contact-text">
-              Your business registration has been submitted. We will contact you
-              after the validation is complete.
-            </p>
-            <p className="contact-sub">
-              You will receive a confirmation email at <strong>{email}</strong> once
-              your registration has been reviewed.
-            </p>
-          </div>
-          <div className="demo-notice">
-            <p>This is a demo &mdash; skip the review process.</p>
-            <button
-              className="btn btn-primary btn-full"
-              onClick={() => navigate('/onboarding')}
-            >
-              Proceed to Dashboard
-            </button>
-          </div>
-        </div>
+      <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-md flex-col justify-center px-4 py-10">
+        <StepIndicator current={3} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Under Review</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-muted/30 px-6 py-8 text-center">
+              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Mail className="size-6" />
+              </span>
+              <p className="text-sm text-muted-foreground">
+                Your business registration has been submitted. We will contact you after the
+                validation is complete.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                You will receive a confirmation email at{' '}
+                <strong className="font-medium text-foreground">{email}</strong> once your
+                registration has been reviewed.
+              </p>
+            </div>
+            <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                This is a demo &mdash; skip the review process.
+              </p>
+              <Button className="w-full" onClick={() => navigate('/onboarding')}>
+                Proceed to Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="page auth-page">
-      <div className="auth-card">
-        <div className="step-indicator">
-          <div className="step-dot step-active" />
-          <div className="step-line" />
-          <div className="step-dot" />
-          <div className="step-line" />
-          <div className="step-dot" />
-          <div className="step-line" />
-          <div className="step-dot" />
-        </div>
-        <h1>Sign Up</h1>
-
-        <form onSubmit={handleSubmit}>
-          <label>
-            Name
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              required
-            />
-          </label>
-          <label>
-            Company
-            <input
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="Company name"
-              required
-            />
-          </label>
-          <label>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="Min 6 characters"
-            />
-          </label>
-          {error && <p className="error">{error}</p>}
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Creating account...' : 'Sign Up'}
-          </button>
-        </form>
-        <p className="auth-link">
-          Already have an account? <Link to="/sign-in">Sign In</Link>
-        </p>
-      </div>
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-md flex-col justify-center px-4 py-10">
+      <StepIndicator current={0} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Sign Up</CardTitle>
+          <CardDescription>
+            Create an operator account to register Wallet-Relying Parties.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  type="text"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="Company name"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="Min 6 characters"
+              />
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              {loading ? 'Creating account...' : 'Sign Up'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link to="/sign-in" className="font-medium text-primary hover:underline">
+              Sign In
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

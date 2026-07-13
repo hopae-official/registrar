@@ -1,6 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getWRP } from '../api/client';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowLeft } from 'lucide-react';
+
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-1 border-b border-border py-2 last:border-0 sm:grid-cols-[180px_1fr] sm:gap-4">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className="text-sm break-all">{children}</dd>
+    </div>
+  );
+}
 
 export default function RPPublicDetail() {
   const { id } = useParams<{ id: string }>();
@@ -15,94 +34,128 @@ export default function RPPublicDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="page"><p className="loading">Loading...</p></div>;
-  if (!rp) return <div className="page"><p className="empty">Relying party not found.</p></div>;
+  if (loading)
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <Skeleton className="mb-6 h-5 w-32" />
+        <Skeleton className="mb-2 h-8 w-1/2" />
+        <Skeleton className="mb-8 h-4 w-1/3" />
+        <Card>
+          <CardContent className="space-y-3 py-6">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-4 w-full" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+
+  if (!rp)
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <Card>
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
+            Relying party not found.
+          </CardContent>
+        </Card>
+      </div>
+    );
 
   return (
-    <div className="page">
-      <Link to="/" className="back-link">Back to Registry</Link>
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <Button asChild variant="ghost" size="sm" className="mb-4 -ml-2 text-muted-foreground">
+        <Link to="/">
+          <ArrowLeft className="size-4" />
+          Back to Registry
+        </Link>
+      </Button>
 
-      <h1>{rp.tradeName || rp.legalName}</h1>
-      {rp.legalName && rp.tradeName && (
-        <p className="legal-name">{rp.legalName}</p>
-      )}
-      <div className="rp-tags">
-        {rp.isIntermediary && <span className="tag tag-blue">Intermediary</span>}
-        {rp.isPSB && <span className="tag tag-green">PSB</span>}
-        {rp.usesIntermediary?.length > 0 && (
-          <span className="tag tag-purple">Uses Intermediary</span>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight">{rp.tradeName || rp.legalName}</h1>
+        {rp.legalName && rp.tradeName && (
+          <p className="text-sm text-muted-foreground">{rp.legalName}</p>
         )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {rp.isIntermediary && <Badge>Intermediary</Badge>}
+          {rp.isPSB && <Badge variant="secondary">PSB</Badge>}
+          {rp.usesIntermediary?.length > 0 && <Badge variant="outline">Uses Intermediary</Badge>}
+        </div>
       </div>
 
-      <section className="section">
-        <h2>Information</h2>
-        <div className="info-grid">
-          <div className="info-item">
-            <span className="info-label">Registry URI</span>
-            <span className="info-value">{rp.registryURI}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Identifiers</span>
-            <span className="info-value">
-              {rp.identifier?.map((id: any, i: number) => (
-                <span key={i}>{id.type}: {id.value}</span>
-              ))}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Email</span>
-            <span className="info-value">{rp.email || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Phone</span>
-            <span className="info-value">{rp.phone || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Support</span>
-            <span className="info-value">{rp.supportURI?.join(', ') || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Description</span>
-            <span className="info-value">{rp.srvDescription?.[0]?.content || '-'}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Entitlements</span>
-            <span className="info-value">
-              {rp.entitlement?.map((e: string) => e.split('/').pop()).join(', ') || '-'}
-            </span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Supervisory Authority</span>
-            <span className="info-value">{rp.supervisoryAuthority?.legalName || '-'}</span>
-          </div>
-          {rp.usesIntermediary?.length > 0 && (
-            <div className="info-item">
-              <span className="info-label">Intermediary</span>
-              <span className="info-value">
-                {rp.usesIntermediary.map((inter: any, i: number) => (
-                  <span key={i}>{inter.tradeName} ({inter.identifier?.[0]?.value})</span>
-                ))}
-              </span>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {rp.intendedUse?.length > 0 && (
-        <section className="section">
-          <h2>Intended Uses</h2>
-          {rp.intendedUse.map((iu: any, i: number) => (
-            <div key={i} className="intended-use-card">
-              <p><strong>Purpose:</strong> {iu.purpose?.[0]?.content}</p>
-              <p><strong>Privacy Policy:</strong> {iu.privacyPolicy?.[0]?.uri}</p>
-              <p><strong>Credentials:</strong> {iu.credential?.map((c: any) => c.format).join(', ')}</p>
-              {iu.intendedUseIdentifier && (
-                <p className="iu-id">ID: {iu.intendedUseIdentifier}</p>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl>
+              <InfoRow label="Registry URI">{rp.registryURI}</InfoRow>
+              <InfoRow label="Identifiers">
+                <div className="flex flex-col gap-0.5">
+                  {rp.identifier?.map((id: any, i: number) => (
+                    <span key={i}>
+                      {id.type}: {id.value}
+                    </span>
+                  ))}
+                </div>
+              </InfoRow>
+              <InfoRow label="Email">{rp.email || '-'}</InfoRow>
+              <InfoRow label="Phone">{rp.phone || '-'}</InfoRow>
+              <InfoRow label="Support">{rp.supportURI?.join(', ') || '-'}</InfoRow>
+              <InfoRow label="Description">{rp.srvDescription?.[0]?.content || '-'}</InfoRow>
+              <InfoRow label="Entitlements">
+                {rp.entitlement?.map((e: string) => e.split('/').pop()).join(', ') || '-'}
+              </InfoRow>
+              <InfoRow label="Supervisory Authority">
+                {rp.supervisoryAuthority?.legalName || '-'}
+              </InfoRow>
+              {rp.usesIntermediary?.length > 0 && (
+                <InfoRow label="Intermediary">
+                  <div className="flex flex-col gap-0.5">
+                    {rp.usesIntermediary.map((inter: any, i: number) => (
+                      <span key={i}>
+                        {inter.tradeName} ({inter.identifier?.[0]?.value})
+                      </span>
+                    ))}
+                  </div>
+                </InfoRow>
               )}
-            </div>
-          ))}
-        </section>
-      )}
+            </dl>
+          </CardContent>
+        </Card>
+
+        {rp.intendedUse?.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Intended Uses</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {rp.intendedUse.map((iu: any, i: number) => (
+                <div
+                  key={i}
+                  className="space-y-1 rounded-md border border-border bg-muted/30 p-4 text-sm"
+                >
+                  <p>
+                    <span className="font-medium">Purpose:</span> {iu.purpose?.[0]?.content}
+                  </p>
+                  <p className="break-all">
+                    <span className="font-medium">Privacy Policy:</span> {iu.privacyPolicy?.[0]?.uri}
+                  </p>
+                  <p>
+                    <span className="font-medium">Credentials:</span>{' '}
+                    {iu.credential?.map((c: any) => c.format).join(', ')}
+                  </p>
+                  {iu.intendedUseIdentifier && (
+                    <p className="break-all text-xs text-muted-foreground">
+                      ID: {iu.intendedUseIdentifier}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

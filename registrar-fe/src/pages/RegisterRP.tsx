@@ -5,6 +5,18 @@ import { createWRP } from '../api/client';
 import { normalRPPreset } from '../presets/data';
 import type { FormData } from '../utils/rpForm';
 import { emptyForm, presetToForm, formToDto } from '../utils/rpForm';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, ChevronDown, Sparkles } from 'lucide-react';
 
 export default function RegisterRP() {
   const { token } = useAuth();
@@ -57,111 +69,233 @@ export default function RegisterRP() {
   };
 
   return (
-    <div className="page register-page">
-      <h1>Register Relying Party</h1>
-      <p className="subtitle">
-        Fill in your organization details to register as a Relying Party.
-      </p>
-
-      {error && <div className="alert alert-error">{error}</div>}
-
-      <div className="form-actions" style={{ marginBottom: 16 }}>
-        <button className="btn demo-fill-btn" onClick={demoFill}>
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Register Relying Party</h1>
+          <p className="text-sm text-muted-foreground">
+            Fill in your organization details to register as a Relying Party.
+          </p>
+        </div>
+        <Button variant="outline" onClick={demoFill} className="w-full sm:w-auto">
+          <Sparkles className="size-4" />
           Demo Fill
-        </button>
+        </Button>
       </div>
 
-      <div className="form-panel">
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Legal Name *</label>
-            <input value={form.legalName} onChange={(e) => updateForm('legalName', e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Trade Name</label>
-            <input value={form.tradeName} onChange={(e) => updateForm('tradeName', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Identifier Type</label>
-            <input value={form.identifierType} onChange={(e) => updateForm('identifierType', e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Identifier Value *</label>
-            <input value={form.identifierValue} onChange={(e) => updateForm('identifierValue', e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" value={form.email} onChange={(e) => updateForm('email', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Phone</label>
-            <input value={form.phone} onChange={(e) => updateForm('phone', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Info URIs (comma-separated)</label>
-            <input value={form.infoURI} onChange={(e) => updateForm('infoURI', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Support URIs (comma-separated) *</label>
-            <input value={form.supportURI} onChange={(e) => updateForm('supportURI', e.target.value)} required />
-          </div>
-          <div className="form-section-title">Service Description</div>
-          <div className="form-group">
-            <label>Language</label>
-            <input value={form.srvDescriptionLang} onChange={(e) => updateForm('srvDescriptionLang', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Description *</label>
-            <input value={form.srvDescriptionContent} onChange={(e) => updateForm('srvDescriptionContent', e.target.value)} required />
-          </div>
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-          <div className="form-accordion">
-            <button type="button" className="form-accordion-toggle" onClick={() => setAdvancedOpen(!advancedOpen)}>
-              <span className={`form-accordion-arrow ${advancedOpen ? 'open' : ''}`}>&#9654;</span>
-              Advanced Options
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Organization Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="legalName">
+                  Legal Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="legalName"
+                  value={form.legalName}
+                  onChange={(e) => updateForm('legalName', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="tradeName">Trade Name</Label>
+                <Input
+                  id="tradeName"
+                  value={form.tradeName}
+                  onChange={(e) => updateForm('tradeName', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="identifierType">Identifier Type</Label>
+                <Input
+                  id="identifierType"
+                  value={form.identifierType}
+                  onChange={(e) => updateForm('identifierType', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="identifierValue">
+                  Identifier Value <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="identifierValue"
+                  value={form.identifierValue}
+                  onChange={(e) => updateForm('identifierValue', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateForm('email', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => updateForm('phone', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="infoURI">Info URIs (comma-separated)</Label>
+                <Input
+                  id="infoURI"
+                  value={form.infoURI}
+                  onChange={(e) => updateForm('infoURI', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="supportURI">
+                  Support URIs (comma-separated) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="supportURI"
+                  value={form.supportURI}
+                  onChange={(e) => updateForm('supportURI', e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Service Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="srvDescriptionLang">Language</Label>
+                <Input
+                  id="srvDescriptionLang"
+                  value={form.srvDescriptionLang}
+                  onChange={(e) => updateForm('srvDescriptionLang', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="srvDescriptionContent">
+                  Description <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="srvDescriptionContent"
+                  value={form.srvDescriptionContent}
+                  onChange={(e) => updateForm('srvDescriptionContent', e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between text-left"
+              onClick={() => setAdvancedOpen(!advancedOpen)}
+            >
+              <CardTitle>Advanced Options</CardTitle>
+              <ChevronDown
+                className={`size-5 text-muted-foreground transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+              />
             </button>
-            {advancedOpen && (
-              <div className="form-accordion-body">
-                <div className="form-group">
-                  <div className="form-check">
-                    <input type="checkbox" id="isPSB" checked={form.isPSB} onChange={(e) => updateForm('isPSB', e.target.checked)} />
-                    <label htmlFor="isPSB">Is PSB (Public Sector Body)</label>
-                  </div>
+          </CardHeader>
+          {advancedOpen && (
+            <CardContent>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    id="isPSB"
+                    checked={form.isPSB}
+                    onChange={(e) => updateForm('isPSB', e.target.checked)}
+                    className="size-4 rounded border-border accent-primary"
+                  />
+                  <Label htmlFor="isPSB">Is PSB (Public Sector Body)</Label>
                 </div>
-                <div className="form-group" />
-                <div className="form-group form-full">
-                  <label>Entitlements (one per line)</label>
-                  <textarea value={form.entitlement} onChange={(e) => updateForm('entitlement', e.target.value)} rows={2} />
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="entitlement">Entitlements (one per line)</Label>
+                  <Textarea
+                    id="entitlement"
+                    value={form.entitlement}
+                    onChange={(e) => updateForm('entitlement', e.target.value)}
+                    rows={2}
+                  />
                 </div>
-                <div className="form-section-title">Supervisory Authority</div>
-                <div className="form-group">
-                  <label>Name *</label>
-                  <input value={form.supervisoryAuthorityName} onChange={(e) => updateForm('supervisoryAuthorityName', e.target.value)} required />
+
+                <div className="sm:col-span-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">Supervisory Authority</h3>
                 </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input value={form.supervisoryAuthorityEmail} onChange={(e) => updateForm('supervisoryAuthorityEmail', e.target.value)} />
+                <div className="grid gap-2">
+                  <Label htmlFor="supervisoryAuthorityName">
+                    Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="supervisoryAuthorityName"
+                    value={form.supervisoryAuthorityName}
+                    onChange={(e) => updateForm('supervisoryAuthorityName', e.target.value)}
+                    required
+                  />
                 </div>
-                <div className="form-group">
-                  <label>Phone</label>
-                  <input value={form.supervisoryAuthorityPhone} onChange={(e) => updateForm('supervisoryAuthorityPhone', e.target.value)} />
+                <div className="grid gap-2">
+                  <Label htmlFor="supervisoryAuthorityEmail">Email</Label>
+                  <Input
+                    id="supervisoryAuthorityEmail"
+                    value={form.supervisoryAuthorityEmail}
+                    onChange={(e) => updateForm('supervisoryAuthorityEmail', e.target.value)}
+                  />
                 </div>
-                <div className="form-group">
-                  <label>Info URIs (comma-separated)</label>
-                  <input value={form.supervisoryAuthorityURI} onChange={(e) => updateForm('supervisoryAuthorityURI', e.target.value)} />
+                <div className="grid gap-2">
+                  <Label htmlFor="supervisoryAuthorityPhone">Phone</Label>
+                  <Input
+                    id="supervisoryAuthorityPhone"
+                    value={form.supervisoryAuthorityPhone}
+                    onChange={(e) => updateForm('supervisoryAuthorityPhone', e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="supervisoryAuthorityURI">Info URIs (comma-separated)</Label>
+                  <Input
+                    id="supervisoryAuthorityURI"
+                    value={form.supervisoryAuthorityURI}
+                    onChange={(e) => updateForm('supervisoryAuthorityURI', e.target.value)}
+                  />
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </CardContent>
+          )}
+        </Card>
 
-        <div className="form-actions">
-          <button className="btn btn-secondary" onClick={() => navigate('/dashboard')} disabled={creating}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/dashboard')}
+            disabled={creating}
+            className="w-full sm:w-auto"
+          >
             Cancel
-          </button>
-          <button className="btn btn-primary" onClick={handleRegister} disabled={creating}>
+          </Button>
+          <Button onClick={handleRegister} disabled={creating} className="w-full sm:w-auto">
             {creating ? 'Registering...' : 'Register Relying Party'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
