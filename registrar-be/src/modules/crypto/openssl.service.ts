@@ -52,9 +52,14 @@ export class OpenSSLService implements OnModuleInit {
   private readonly openSSLConfigPath: string;
   private readonly crlHostPath: string;
   private readonly host: string;
+  // Dedicated JWS signer (leaf issued by the CA) — the CA (root) itself must not sign end-entity JWS tokens.
+  private readonly signerKeyPath: string;
+  private readonly signerCertPath: string;
 
   private cachedCert: string | null = null;
   private cachedPrivateKey: KeyObject | null = null;
+  private cachedSignerCert: string | null = null;
+  private cachedSignerKey: KeyObject | null = null;
 
   constructor(private configService: ConfigService) {
     this.folder = this.configService.get<string>(
@@ -78,6 +83,8 @@ export class OpenSSLService implements OnModuleInit {
     this.crlNumberFile = join(this.folder, 'crlnumber');
     this.openSSLConfigPath = join(this.folder, 'openssl.cnf');
     this.crlHostPath = `${apiBaseUrl}/status-management/crl`;
+    this.signerKeyPath = join(this.folder, 'signer.key');
+    this.signerCertPath = join(this.folder, 'signer.crt');
   }
 
   async onModuleInit(): Promise<void> {
@@ -88,6 +95,23 @@ export class OpenSSLService implements OnModuleInit {
     this.ensureFolderExists();
     this.createOpenSSLConfig();
     await this.loadCaFromEnv();
+    this.loadSignerFromEnv();
+  }
+
+  /**
+   * Persistent JWS signer: if `REGISTRAR_SIGNER_CERT` + `REGISTRAR_SIGNER_KEY` are set (PEM), write them so the
+   * signer leaf (issued offline by the CA) survives restarts. Unset ⇒ `ensureSignerCert()` mints an ephemeral
+   * one at boot (dev only). Mirrors `loadCaFromEnv`.
+   */
+  private loadSignerFromEnv(): void {
+    const certPem = this.configService.get<string>('REGISTRAR_SIGNER_CERT');
+    const keyPem = this.configService.get<string>('REGISTRAR_SIGNER_KEY');
+    if (!certPem || !keyPem) return;
+    writeFileSync(this.signerCertPath, certPem.trim() + '\n');
+    writeFileSync(this.signerKeyPath, keyPem.trim() + '\n');
+    this.cachedSignerCert = null;
+    this.cachedSignerKey = null;
+    this.logger.log('JWS signer loaded from env (REGISTRAR_SIGNER_CERT / REGISTRAR_SIGNER_KEY)');
   }
 
   /**
@@ -141,6 +165,45 @@ export class OpenSSLService implements OnModuleInit {
       );
     }
     return this.cachedPrivateKey;
+  }
+
+  /**
+   * Ensure a dedicated JWS **signer** certificate exists: an EC P-256 leaf issued BY the CA (KeyUsage
+   * digitalSignature, CA:FALSE). The registrar signs WRPRC / status-list / registry-response JWS tokens with
+   * this leaf — never with the root CA key — and carries `x5c=[signer]` (the wallet resolves the CA from its
+   * trust list). The CA still issues WRPACs directly. Must be called AFTER the CA exists.
+   */
+  async ensureSignerCert(): Promise<void> {
+    return this.mutex.runExclusive(async () => {
+      if (existsSync(this.signerKeyPath) && existsSync(this.signerCertPath)) return;
+      const csrPath = join(this.folder, 'signer.csr');
+      const extPath = join(this.folder, 'signer.ext');
+      writeFileSync(extPath, 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n');
+      await execAsync(`openssl ecparam -genkey -name prime256v1 -noout -out ${this.signerKeyPath}`);
+      await execAsync(
+        `openssl req -new -key ${this.signerKeyPath} -out ${csrPath} -subj "/C=LU/O=Hopae S.A./CN=Hopae S.A. Registrar Signer"`,
+      );
+      await execAsync(
+        `openssl x509 -req -in ${csrPath} -CA ${this.certPath} -CAkey ${this.privateKeyPath} -CAcreateserial -days 365 -extfile ${extPath} -out ${this.signerCertPath}`,
+      );
+      this.cachedSignerCert = null;
+      this.cachedSignerKey = null;
+      this.logger.log('Registrar JWS signer cert generated (leaf issued by the CA)');
+    });
+  }
+
+  get signerCert(): string {
+    if (!this.cachedSignerCert) {
+      this.cachedSignerCert = readFileSync(this.signerCertPath, 'utf8');
+    }
+    return this.cachedSignerCert;
+  }
+
+  signerPrivateKey(): KeyObject {
+    if (!this.cachedSignerKey) {
+      this.cachedSignerKey = createPrivateKey(readFileSync(this.signerKeyPath, 'utf8'));
+    }
+    return this.cachedSignerKey;
   }
 
   async generateKeysAndCert(subject = '/C=LU/CN=Registrar'): Promise<void> {

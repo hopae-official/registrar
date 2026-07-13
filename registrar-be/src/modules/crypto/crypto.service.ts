@@ -3,7 +3,7 @@ import { OpenSSLService, WrpacSubject } from './openssl.service';
 import { JWTHeaderParameters, JWTPayload, SignJWT } from 'jose';
 import { ConfigService } from '@nestjs/config';
 import { Token, ProtectedHeaders } from '@lukas.j.han/jades';
-import { createHash } from 'node:crypto';
+import { createHash, X509Certificate } from 'node:crypto';
 import type { StatusList } from '../status_list/status-list.codec';
 
 @Injectable()
@@ -29,7 +29,10 @@ export class CryptoService implements OnModuleInit {
   private async initialize(): Promise<void> {
     if (this.initialized) return;
     await this.openssl.generateKeysAndCert();
-    this.x5c = this.generateX5c(this.openssl.ownCert);
+    await this.openssl.ensureSignerCert();
+    // JWS tokens are signed with the dedicated signer leaf; x5c carries only the leaf (the CA is the wallet's
+    // trust anchor, resolved from its trust list — RFC 7515 excludes the anchor).
+    this.x5c = this.generateX5c(this.openssl.signerCert);
     this.initialized = true;
   }
 
@@ -60,7 +63,7 @@ export class CryptoService implements OnModuleInit {
       .setIssuer(this.issuer)
       .setIssuedAt(now)
       .setExpirationTime(now + 300) // short-lived signed registry response (5 min freshness window)
-      .sign(this.openssl.privateKey());
+      .sign(this.openssl.signerPrivateKey());
   }
 
   /**
@@ -71,8 +74,9 @@ export class CryptoService implements OnModuleInit {
    * no `iss`/`iat` are injected into the header — protocol claims belong in the payload.
    */
   signJAdES(payload: Record<string, unknown>, typ: string): string {
+    // x5t#S256 = SHA-256 of the signing cert (x5c[0] = the signer leaf).
     const x5tS256 = createHash('sha256')
-      .update(this.openssl.ownCertDer)
+      .update(new X509Certificate(this.openssl.signerCert).raw)
       .digest('base64url');
     // JAdES sigT is an ISO-8601 UTC instant without fractional seconds.
     const sigT = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
@@ -81,7 +85,7 @@ export class CryptoService implements OnModuleInit {
     token.setProtectedHeaders(
       new ProtectedHeaders({ typ, x5c: this.x5c, x5tS256, sigT }),
     );
-    token.sign('ES256', this.openssl.privateKey());
+    token.sign('ES256', this.openssl.signerPrivateKey());
     return token.toString();
   }
 
@@ -101,7 +105,7 @@ export class CryptoService implements OnModuleInit {
       .setSubject(sub)
       .setIssuedAt(now)
       .setExpirationTime(now + ttlSec)
-      .sign(this.openssl.privateKey());
+      .sign(this.openssl.signerPrivateKey());
   }
 
   async revokeCert(certificatePem: string): Promise<void> {
