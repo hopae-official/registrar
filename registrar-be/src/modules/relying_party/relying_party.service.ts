@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { DRIZZLE, type DrizzleDb } from '../../db/drizzle.module';
@@ -16,12 +17,29 @@ import {
   CheckIntendedUseQueryDto,
   AccessCertificateEntry,
   RegistrationCertificateEntry,
-  IntendedUse,
 } from './relying_party.dto';
 
 @Injectable()
 export class RelyingPartyService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb) {}
+  /**
+   * The registrar's public registry API base — TS5 `registryURI`. The wallet resolves
+   * `${registryURI}/wrp/{identifier}` and `${registryURI}/wrp/check-intended-use` against it when it
+   * has no WRPRC and falls back to the Registrar (ETSI TS 119 472-2 REQ-RO-08, ARF RPRC_18).
+   * `API_BASE_URL` is injected already including the `registrar` global prefix
+   * (e.g. `https://dev.api.hopae.com/registrar` — the same base the CRL URL is built from), so we only
+   * append the `PublicRegistryController` path `registry`.
+   */
+  private readonly registryBase: string;
+
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDb,
+    config: ConfigService,
+  ) {
+    const apiBaseUrl = config
+      .get<string>('API_BASE_URL', 'http://localhost:18000/registrar')
+      .replace(/\/+$/, '');
+    this.registryBase = `${apiBaseUrl}/registry`;
+  }
 
   // --- Postgres-backed persistence (the RP is stored as a jsonb `data` blob) ---
 
@@ -72,9 +90,11 @@ export class RelyingPartyService {
   }
 
   private toPublicResponse(rp: WalletRelyingParty) {
-    // Per TS5 spec: exclude physicalAddress from public responses
+    // Per TS5 spec: exclude physicalAddress from public responses. Always surface the current absolute
+    // registry API base as `registryURI` (overriding whatever was persisted) so the wallet can call
+    // back to `${registryURI}/wrp/...` — see the `registryBase` note above.
     const { postalAddress, ownerId, ...publicData } = rp;
-    return publicData;
+    return { ...publicData, registryURI: this.registryBase };
   }
 
   async getById(id: string): Promise<WalletRelyingParty | undefined> {
@@ -230,14 +250,15 @@ export class RelyingPartyService {
     return rps.map((rp) => this.toPublicResponse(rp));
   }
 
-  async checkIntendedUse(query: CheckIntendedUseQueryDto): Promise<IntendedUse> {
+  async checkIntendedUse(
+    query: CheckIntendedUseQueryDto,
+  ): Promise<{ isRegistered: boolean }> {
     const all = await this.all();
     const rp = all.find((r) =>
       r.identifier.some((id) => id.value === query.identifier),
     );
-    if (!rp?.intendedUse) throw new NotFoundException('Not found');
 
-    const iu = rp.intendedUse.find((iu) => {
+    const iu = rp?.intendedUse?.find((iu) => {
       // intendedUseIdentifier 체크
       if (
         query.intendedUseIdentifier &&
@@ -275,8 +296,9 @@ export class RelyingPartyService {
       return true;
     });
 
-    if (!iu) throw new NotFoundException('Not found');
-    return iu;
+    // TS5: this endpoint returns a JWS-signed boolean. A negative answer MUST also be signed (so the
+    // wallet can trust "not registered"), hence we return `false` rather than throwing a 404.
+    return { isRegistered: !!iu };
   }
 
   async create(
@@ -284,7 +306,7 @@ export class RelyingPartyService {
     ownerId: string,
   ): Promise<WalletRelyingParty> {
     const id = randomUUID();
-    const registryURI = `/wrp/${id}`;
+    const registryURI = this.registryBase;
 
     // Registrar assigns intendedUseIdentifier and createdAt for each intended use
     const intendedUse = dto.intendedUse?.map((iu) => ({
