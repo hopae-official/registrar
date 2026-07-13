@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
   Inject,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +18,7 @@ import {
   CheckIntendedUseQueryDto,
   AccessCertificateEntry,
   RegistrationCertificateEntry,
+  Identifier,
 } from './relying_party.dto';
 
 @Injectable()
@@ -309,10 +311,34 @@ export class RelyingPartyService {
     return { isRegistered: !!iu };
   }
 
+  /**
+   * Enforce that a relying-party `identifier` value is unique across the registry. The RP identifier
+   * (LEI/VAT/EORI…) is a real-world unique id and is the key the wallet resolves an RP by — `check-intended-use`
+   * and `getUniqueIdentifier` match on `identifier.value`, so a duplicate would silently shadow the real RP.
+   * Rejects the write (409) if any supplied identifier value already belongs to a different RP.
+   */
+  private async assertIdentifierUnique(
+    identifiers: Identifier[] | undefined,
+    excludeId?: string,
+  ): Promise<void> {
+    const values = (identifiers ?? []).map((i) => i.value).filter(Boolean);
+    if (!values.length) return;
+    for (const rp of await this.all()) {
+      if (rp.id === excludeId) continue;
+      const clash = (rp.identifier ?? []).find((i) => values.includes(i.value));
+      if (clash) {
+        throw new ConflictException(
+          `identifier '${clash.value}' is already registered to another relying party`,
+        );
+      }
+    }
+  }
+
   async create(
     dto: CreateRelyingPartyDto,
     ownerId: string,
   ): Promise<WalletRelyingParty> {
+    await this.assertIdentifierUnique(dto.identifier);
     const id = randomUUID();
     const registryURI = this.registryBase;
 
@@ -352,6 +378,9 @@ export class RelyingPartyService {
         'Not authorized to update this relying party',
       );
     }
+
+    // A changed identifier must not collide with another RP.
+    if (dto.identifier) await this.assertIdentifierUnique(dto.identifier, id);
 
     // Assign intendedUseIdentifier for new intended uses
     let intendedUse = rp.intendedUse;
