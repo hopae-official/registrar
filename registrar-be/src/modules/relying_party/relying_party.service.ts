@@ -263,36 +263,36 @@ export class RelyingPartyService {
   ): Promise<{ isRegistered: boolean }> {
     const all = await this.all();
     const rp = all.find((r) =>
-      r.identifier.some((id) => id.value === query.identifier),
+      r.identifier.some((id) => id.value === query.rpidentifier),
     );
 
     const iu = rp?.intendedUse?.find((iu) => {
-      // intendedUseIdentifier 체크
+      // intendeduseidentifier 체크
       if (
-        query.intendedUseIdentifier &&
-        iu.intendedUseIdentifier !== query.intendedUseIdentifier
+        query.intendeduseidentifier &&
+        iu.intendedUseIdentifier !== query.intendeduseidentifier
       ) {
         return false;
       }
 
-      // purpose 체크
-      if (query.purpose) {
-        const hasPurpose = iu.purpose.some((p) =>
-          p.content.toLowerCase().includes(query.purpose!.toLowerCase()),
-        );
-        if (!hasPurpose) return false;
+      // policyurl 체크 — the queried privacy-policy URL must be registered for this intended use
+      if (
+        query.policyurl &&
+        !iu.privacyPolicy.some((p) => p.uri === query.policyurl)
+      ) {
+        return false;
       }
 
       // credential 관련 체크
-      if (query.credentialFormat || query.credentialMeta || query.claimPath) {
+      if (query.credentialformat || query.credentialmeta || query.claimpath) {
         const hasCredential = iu.credential.some((c) => {
-          if (query.credentialFormat && c.format !== query.credentialFormat)
+          if (query.credentialformat && c.format !== query.credentialformat)
             return false;
-          if (query.credentialMeta && c.meta !== query.credentialMeta)
+          if (query.credentialmeta && c.meta !== query.credentialmeta)
             return false;
           if (
-            query.claimPath &&
-            !c.claim?.some((cl) => cl.path.includes(query.claimPath!))
+            query.claimpath &&
+            !c.claim?.some((cl) => cl.path.includes(query.claimpath!))
           ) {
             return false;
           }

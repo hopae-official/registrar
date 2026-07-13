@@ -173,12 +173,14 @@ export class SearchRelyingPartyQueryDto {
 }
 
 export class CheckIntendedUseQueryDto {
-  identifier: string;
-  intendedUseIdentifier?: string;
-  credentialFormat?: string;
-  credentialMeta?: string;
-  claimPath?: string;
-  purpose?: string;
+  // TS5 `/wrp/check-intended-use` query parameters — names are verbatim from the OpenAPI spec
+  // (all lowercase; `rpidentifier` is the mandatory RP identifier).
+  rpidentifier: string;
+  intendeduseidentifier?: string;
+  credentialformat?: string;
+  claimpath?: string;
+  credentialmeta?: string;
+  policyurl?: string;
 }
 
 // --- Certificate creation DTOs ---
