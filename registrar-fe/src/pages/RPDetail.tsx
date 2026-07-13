@@ -229,7 +229,7 @@ export default function RPDetail() {
     const interRef = rp?.usesIntermediary?.[0];
     // Use the intermediary's registered identifier directly — the registryURI is now the absolute
     // registry API base (TS5), not the old `/wrp/{id}` form, so it no longer carries the id.
-    return interRef?.identifier?.[0]?.value ?? '';
+    return interRef?.identifier?.[0]?.identifier ?? '';
   };
 
   const openRegForm = () => {
@@ -491,7 +491,7 @@ export default function RPDetail() {
                       <span className="flex flex-col gap-0.5">
                         {rp.usesIntermediary.map((inter: any, i: number) => (
                           <span key={i}>
-                            {inter.tradeName} ({inter.identifier?.[0]?.value})
+                            {inter.tradeName} ({inter.identifier?.[0]?.identifier})
                           </span>
                         ))}
                       </span>
@@ -519,7 +519,7 @@ export default function RPDetail() {
                     </p>
                     <p className="break-all">
                       <span className="font-medium">Privacy Policy:</span>{' '}
-                      {iu.privacyPolicy?.[0]?.uri}
+                      {iu.privacyPolicy?.[0]?.policyURI}
                     </p>
                     <p className="break-words">
                       <span className="font-medium">Credentials:</span>{' '}

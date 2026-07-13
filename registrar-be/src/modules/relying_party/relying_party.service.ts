@@ -119,19 +119,19 @@ export class RelyingPartyService {
     // the EN 319 412-1 §5.1.4 scheme-specific semantic prefix (GEN-5.1.3). Fall back to the internal id when
     // no identifier was registered.
     const id = rp.identifier?.[0];
-    if (!id?.value) return rp.id;
+    if (!id?.identifier) return rp.id;
     const country = this.country;
     switch (id.type) {
       case 'LEI':
-        return `LEIXG-${id.value}`; // LEI is global — "XG", no country code
+        return `LEIXG-${id.identifier}`; // LEI is global — "XG", no country code
       case 'VAT':
-        return `VAT${country}-${id.value}`;
+        return `VAT${country}-${id.identifier}`;
       case 'NTR':
-        return `NTR${country}-${id.value}`;
+        return `NTR${country}-${id.identifier}`;
       case 'EORI':
-        return `EORI${country}-${id.value}`;
+        return `EORI${country}-${id.identifier}`;
       default:
-        return id.value; // unknown scheme → raw value (best effort)
+        return id.identifier; // unknown scheme → raw value (best effort)
     }
   }
 
@@ -140,7 +140,7 @@ export class RelyingPartyService {
 
     if (query.identifier) {
       results = results.filter((rp) =>
-        rp.identifier.some((id) => id.value === query.identifier),
+        rp.identifier.some((id) => id.identifier === query.identifier),
       );
     }
 
@@ -163,7 +163,7 @@ export class RelyingPartyService {
     if (query.policy) {
       results = results.filter((rp) =>
         rp.intendedUse?.some((iu) =>
-          iu.privacyPolicy.some((p) => p.uri === query.policy),
+          iu.privacyPolicy.some((p) => p.policyURI === query.policy),
         ),
       );
     }
@@ -261,7 +261,7 @@ export class RelyingPartyService {
     const all = await this.all();
     const rp = all.find(
       (rp) =>
-        rp.identifier.some((id) => id.value === identifier) ||
+        rp.identifier.some((id) => id.identifier === identifier) ||
         rp.id === identifier,
     );
     if (!rp) {
@@ -282,7 +282,7 @@ export class RelyingPartyService {
   ): Promise<{ isRegistered: boolean }> {
     const all = await this.all();
     const rp = all.find((r) =>
-      r.identifier.some((id) => id.value === query.rpidentifier),
+      r.identifier.some((id) => id.identifier === query.rpidentifier),
     );
 
     const iu = rp?.intendedUse?.find((iu) => {
@@ -297,7 +297,7 @@ export class RelyingPartyService {
       // policyurl 체크 — the queried privacy-policy URL must be registered for this intended use
       if (
         query.policyurl &&
-        !iu.privacyPolicy.some((p) => p.uri === query.policyurl)
+        !iu.privacyPolicy.some((p) => p.policyURI === query.policyurl)
       ) {
         return false;
       }
@@ -331,21 +331,21 @@ export class RelyingPartyService {
   /**
    * Enforce that a relying-party `identifier` value is unique across the registry. The RP identifier
    * (LEI/VAT/EORI…) is a real-world unique id and is the key the wallet resolves an RP by — `check-intended-use`
-   * and `getUniqueIdentifier` match on `identifier.value`, so a duplicate would silently shadow the real RP.
+   * and `getUniqueIdentifier` match on the identifier value, so a duplicate would silently shadow the real RP.
    * Rejects the write (409) if any supplied identifier value already belongs to a different RP.
    */
   private async assertIdentifierUnique(
     identifiers: Identifier[] | undefined,
     excludeId?: string,
   ): Promise<void> {
-    const values = (identifiers ?? []).map((i) => i.value).filter(Boolean);
+    const values = (identifiers ?? []).map((i) => i.identifier).filter(Boolean);
     if (!values.length) return;
     for (const rp of await this.all()) {
       if (rp.id === excludeId) continue;
-      const clash = (rp.identifier ?? []).find((i) => values.includes(i.value));
+      const clash = (rp.identifier ?? []).find((i) => values.includes(i.identifier));
       if (clash) {
         throw new ConflictException(
-          `identifier '${clash.value}' is already registered to another relying party`,
+          `identifier '${clash.identifier}' is already registered to another relying party`,
         );
       }
     }
@@ -460,7 +460,7 @@ export class RelyingPartyService {
           !rp.isIntermediary &&
           rp.usesIntermediary?.some((ref) =>
             ref.identifier.some((refId) =>
-              intermediary.identifier.some((iid) => iid.value === refId.value),
+              intermediary.identifier.some((iid) => iid.identifier === refId.identifier),
             ),
           ),
       )
@@ -476,14 +476,14 @@ export class RelyingPartyService {
     const all = await this.all();
     const rp = all.find(
       (r) =>
-        r.identifier.some((id) => id.value === rpIdentifier) ||
+        r.identifier.some((id) => id.identifier === rpIdentifier) ||
         r.id === rpIdentifier,
     );
     if (!rp) return false;
 
     return (
       rp.usesIntermediary?.some((ref) =>
-        ref.identifier.some((id) => id.value === intermediaryIdentifier),
+        ref.identifier.some((id) => id.identifier === intermediaryIdentifier),
       ) ?? false
     );
   }

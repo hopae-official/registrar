@@ -18,14 +18,16 @@ export class Credential {
   claim?: Claim[];
 }
 
+// ETSI TS 119 475 Annex B.2.8 — the Policy object member is `policyURI` (not `uri`).
 export class Policy {
   type: string;
-  uri: string;
+  policyURI: string;
 }
 
+// ETSI TS 119 475 Annex B.2.5 — the Identifier object member is `identifier` (not `value`).
 export class Identifier {
   type: string;
-  value: string;
+  identifier: string;
 }
 
 export class SupervisoryAuthority {

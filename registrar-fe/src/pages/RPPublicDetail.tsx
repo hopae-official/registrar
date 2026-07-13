@@ -114,7 +114,7 @@ export default function RPPublicDetail() {
                   <div className="flex flex-col gap-0.5">
                     {rp.usesIntermediary.map((inter: any, i: number) => (
                       <span key={i}>
-                        {inter.tradeName} ({inter.identifier?.[0]?.value})
+                        {inter.tradeName} ({inter.identifier?.[0]?.identifier})
                       </span>
                     ))}
                   </div>
@@ -139,7 +139,7 @@ export default function RPPublicDetail() {
                     <span className="font-medium">Purpose:</span> {iu.purpose?.[0]?.content}
                   </p>
                   <p className="break-all">
-                    <span className="font-medium">Privacy Policy:</span> {iu.privacyPolicy?.[0]?.uri}
+                    <span className="font-medium">Privacy Policy:</span> {iu.privacyPolicy?.[0]?.policyURI}
                   </p>
                   <p>
                     <span className="font-medium">Credentials:</span>{' '}

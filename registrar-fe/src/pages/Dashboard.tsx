@@ -191,7 +191,7 @@ export default function Dashboard() {
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge>Intermediary</Badge>
                           <span className="text-sm text-muted-foreground break-all">
-                            {int.identifier?.[0]?.value}
+                            {int.identifier?.[0]?.identifier}
                           </span>
                         </div>
                       </div>

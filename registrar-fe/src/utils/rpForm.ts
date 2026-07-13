@@ -49,7 +49,7 @@ export function presetToForm(preset: any): FormData {
     legalName: preset.legalName ?? '',
     tradeName: preset.tradeName ?? '',
     identifierType: preset.identifier?.[0]?.type ?? '',
-    identifierValue: preset.identifier?.[0]?.value ?? '',
+    identifierValue: preset.identifier?.[0]?.identifier ?? '',
     infoURI: (preset.infoURI ?? []).join(', '),
     email: preset.email ?? '',
     phone: preset.phone ?? '',
@@ -76,7 +76,7 @@ export function formToDto(form: FormData): any {
   const dto: any = {
     legalName: form.legalName,
     tradeName: form.tradeName || undefined,
-    identifier: [{ type: form.identifierType, value: form.identifierValue }],
+    identifier: [{ type: form.identifierType, identifier: form.identifierValue }],
     infoURI: form.infoURI
       ? form.infoURI
           .split(',')

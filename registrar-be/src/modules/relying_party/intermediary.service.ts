@@ -55,7 +55,7 @@ export class IntermediaryService {
     }
     const linked = rp.usesIntermediary?.some((ref) =>
       ref.identifier.some((refId) =>
-        intermediary.identifier.some((iid) => iid.value === refId.value),
+        intermediary.identifier.some((iid) => iid.identifier === refId.identifier),
       ),
     );
     if (!linked) {
