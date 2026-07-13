@@ -280,7 +280,9 @@ export default function RPDetail() {
 
   const fillRegIntermediary = () => {
     const interRef = rp?.usesIntermediary?.[0];
-    return interRef?.registryURI?.replace(/^\/wrp\//, '') ?? '';
+    // Use the intermediary's registered identifier directly — the registryURI is now the absolute
+    // registry API base (TS5), not the old `/wrp/{id}` form, so it no longer carries the id.
+    return interRef?.identifier?.[0]?.value ?? '';
   };
 
   const openRegForm = () => {

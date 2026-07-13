@@ -74,7 +74,7 @@ export class RegistrationCertService {
       ...(rp.familyName ? { sub_fn: rp.familyName } : {}),
       sub,
       country,
-      registry_uri: host + rp.registryURI,
+      registry_uri: this.relyingPartyService.registryUri,
       srv_description: [(rp.srvDescription ?? []).map(toLangValue)],
       entitlements,
       privacy_policy: dto.privacy_policy,

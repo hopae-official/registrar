@@ -41,6 +41,14 @@ export class RelyingPartyService {
     this.registryBase = `${apiBaseUrl}/registry`;
   }
 
+  /**
+   * The public registry API base (TS5 `registryURI`) — single source of truth so the WRPRC
+   * `registry_uri` claim and the wallet-facing `registryURI` field stay identical.
+   */
+  get registryUri(): string {
+    return this.registryBase;
+  }
+
   // --- Postgres-backed persistence (the RP is stored as a jsonb `data` blob) ---
 
   private async all(): Promise<WalletRelyingParty[]> {
