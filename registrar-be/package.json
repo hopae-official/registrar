@@ -23,7 +23,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@fastify/static": "^9.0.0",
+    "@fastify/static": "^10.1.2",
     "@lukas.j.han/jades": "^1.0.6",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
