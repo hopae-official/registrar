@@ -31,10 +31,14 @@ export class IntermediaryService {
       );
     }
     if (rp.ownerId !== userId) {
-      throw new ForbiddenException('Not authorized to manage this intermediary');
+      throw new ForbiddenException(
+        'Not authorized to manage this intermediary',
+      );
     }
     if (!rp.isIntermediary) {
-      throw new BadRequestException('This WRP is not registered as an intermediary');
+      throw new BadRequestException(
+        'This WRP is not registered as an intermediary',
+      );
     }
     return rp;
   }
@@ -55,7 +59,9 @@ export class IntermediaryService {
     }
     const linked = rp.usesIntermediary?.some((ref) =>
       ref.identifier.some((refId) =>
-        intermediary.identifier.some((iid) => iid.identifier === refId.identifier),
+        intermediary.identifier.some(
+          (iid) => iid.identifier === refId.identifier,
+        ),
       ),
     );
     if (!linked) {

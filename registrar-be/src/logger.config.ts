@@ -72,12 +72,7 @@ export function createLoggerConfig(config: ConfigService): Params {
           resBody: res.body ? JSON.stringify(res.body) : undefined,
         };
       },
-      customErrorObject(
-        req: RawReq,
-        res: RawRes,
-        _error: Error,
-        val: object,
-      ) {
+      customErrorObject(req: RawReq, res: RawRes, _error: Error, val: object) {
         return {
           ...val,
           reqBody: req.body ? JSON.stringify(req.body) : undefined,

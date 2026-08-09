@@ -26,7 +26,9 @@ export type DrizzleDb = PostgresJsDatabase<typeof schema>;
   exports: [DRIZZLE],
 })
 export class DrizzleModule implements OnModuleDestroy {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleDb & { $client: postgres.Sql }) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleDb & { $client: postgres.Sql },
+  ) {}
 
   async onModuleDestroy() {
     await this.db.$client.end();

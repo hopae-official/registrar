@@ -111,7 +111,9 @@ export class OpenSSLService implements OnModuleInit {
     writeFileSync(this.signerKeyPath, keyPem.trim() + '\n');
     this.cachedSignerCert = null;
     this.cachedSignerKey = null;
-    this.logger.log('JWS signer loaded from env (REGISTRAR_SIGNER_CERT / REGISTRAR_SIGNER_KEY)');
+    this.logger.log(
+      'JWS signer loaded from env (REGISTRAR_SIGNER_CERT / REGISTRAR_SIGNER_KEY)',
+    );
   }
 
   /**
@@ -130,7 +132,9 @@ export class OpenSSLService implements OnModuleInit {
     );
     this.cachedCert = null;
     this.cachedPrivateKey = null;
-    this.logger.log('CA loaded from env (REGISTRAR_CA_CERT / REGISTRAR_CA_KEY)');
+    this.logger.log(
+      'CA loaded from env (REGISTRAR_CA_CERT / REGISTRAR_CA_KEY)',
+    );
   }
 
   private ensureFolderExists(): void {
@@ -175,11 +179,17 @@ export class OpenSSLService implements OnModuleInit {
    */
   async ensureSignerCert(): Promise<void> {
     return this.mutex.runExclusive(async () => {
-      if (existsSync(this.signerKeyPath) && existsSync(this.signerCertPath)) return;
+      if (existsSync(this.signerKeyPath) && existsSync(this.signerCertPath))
+        return;
       const csrPath = join(this.folder, 'signer.csr');
       const extPath = join(this.folder, 'signer.ext');
-      writeFileSync(extPath, 'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n');
-      await execAsync(`openssl ecparam -genkey -name prime256v1 -noout -out ${this.signerKeyPath}`);
+      writeFileSync(
+        extPath,
+        'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n',
+      );
+      await execAsync(
+        `openssl ecparam -genkey -name prime256v1 -noout -out ${this.signerKeyPath}`,
+      );
       await execAsync(
         `openssl req -new -key ${this.signerKeyPath} -out ${csrPath} -subj "/C=LU/O=Hopae S.A./CN=Hopae S.A. Registrar Signer"`,
       );
@@ -188,7 +198,9 @@ export class OpenSSLService implements OnModuleInit {
       );
       this.cachedSignerCert = null;
       this.cachedSignerKey = null;
-      this.logger.log('Registrar JWS signer cert generated (leaf issued by the CA)');
+      this.logger.log(
+        'Registrar JWS signer cert generated (leaf issued by the CA)',
+      );
     });
   }
 
@@ -201,7 +213,9 @@ export class OpenSSLService implements OnModuleInit {
 
   signerPrivateKey(): KeyObject {
     if (!this.cachedSignerKey) {
-      this.cachedSignerKey = createPrivateKey(readFileSync(this.signerKeyPath, 'utf8'));
+      this.cachedSignerKey = createPrivateKey(
+        readFileSync(this.signerKeyPath, 'utf8'),
+      );
     }
     return this.cachedSignerKey;
   }

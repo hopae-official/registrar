@@ -10,7 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { RelyingPartyService } from '../relying_party.service';
 import { AccessCertService } from '../../access_cert/access_cert.service';
 import { RegistrationCertService } from '../../registration_cert/registration_cert.service';
@@ -36,7 +41,9 @@ export class WrpPortalController {
   ) {}
 
   @Get('my')
-  @ApiOperation({ summary: 'List WRPs owned by the authenticated user (non-intermediary)' })
+  @ApiOperation({
+    summary: 'List WRPs owned by the authenticated user (non-intermediary)',
+  })
   @ApiResponse({ status: 200, description: 'List of own WRPs' })
   async findMy(@AuthenticatedUser() user: AuthPayload) {
     const all = await this.rpService.findAllByUser(user.sub);
@@ -47,7 +54,10 @@ export class WrpPortalController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new Wallet-Relying Party' })
   @ApiResponse({ status: 201, description: 'WRP created' })
-  create(@Body() dto: CreateRelyingPartyDto, @AuthenticatedUser() user: AuthPayload) {
+  create(
+    @Body() dto: CreateRelyingPartyDto,
+    @AuthenticatedUser() user: AuthPayload,
+  ) {
     dto.isIntermediary = false;
     return this.rpService.create(dto, user.sub);
   }
@@ -91,7 +101,10 @@ export class WrpPortalController {
   @ApiOperation({ summary: 'Revoke an access certificate' })
   @ApiResponse({ status: 200, description: 'Certificate revoked' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  revokeAccessCert(@Param('rpId') rpId: string, @Param('certId') certId: string) {
+  revokeAccessCert(
+    @Param('rpId') rpId: string,
+    @Param('certId') certId: string,
+  ) {
     return this.accessCertService.revoke(rpId, certId);
   }
 
@@ -113,7 +126,10 @@ export class WrpPortalController {
   @ApiOperation({ summary: 'Revoke a registration certificate' })
   @ApiResponse({ status: 200, description: 'Certificate revoked' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  revokeRegistrationCert(@Param('rpId') rpId: string, @Param('certId') certId: string) {
+  revokeRegistrationCert(
+    @Param('rpId') rpId: string,
+    @Param('certId') certId: string,
+  ) {
     return this.regCertService.revoke(rpId, certId);
   }
 }

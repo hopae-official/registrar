@@ -10,7 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { JwtGuard } from '../../auth/jwt.guard';
 import { AuthenticatedUser } from '../../user/user.deco';
 import { AuthPayload } from '../../auth/auth.service';
@@ -32,7 +37,9 @@ export class IntermediaryPortalController {
   // --- Intermediary self-management ---
 
   @Get('my')
-  @ApiOperation({ summary: 'List intermediaries owned by the authenticated user' })
+  @ApiOperation({
+    summary: 'List intermediaries owned by the authenticated user',
+  })
   @ApiResponse({ status: 200, description: 'List of own intermediaries' })
   listMy(@AuthenticatedUser() user: AuthPayload) {
     return this.intermediaryService.listMyIntermediaries(user.sub);
@@ -42,7 +49,10 @@ export class IntermediaryPortalController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register as an intermediary' })
   @ApiResponse({ status: 201, description: 'Intermediary created' })
-  register(@Body() dto: CreateRelyingPartyDto, @AuthenticatedUser() user: AuthPayload) {
+  register(
+    @Body() dto: CreateRelyingPartyDto,
+    @AuthenticatedUser() user: AuthPayload,
+  ) {
     return this.intermediaryService.registerIntermediary(dto, user.sub);
   }
 
@@ -69,7 +79,9 @@ export class IntermediaryPortalController {
 
   @Post(':id/access-certs')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create an access certificate (WRPAC) for the intermediary' })
+  @ApiOperation({
+    summary: 'Create an access certificate (WRPAC) for the intermediary',
+  })
   @ApiResponse({ status: 201, description: 'Access certificate created' })
   createAccessCert(
     @Param('id') id: string,
@@ -82,7 +94,10 @@ export class IntermediaryPortalController {
   @Get(':id/access-certs')
   @ApiOperation({ summary: 'List access certificates for the intermediary' })
   @ApiResponse({ status: 200, description: 'List of access certificates' })
-  getAccessCerts(@Param('id') id: string, @AuthenticatedUser() user: AuthPayload) {
+  getAccessCerts(
+    @Param('id') id: string,
+    @AuthenticatedUser() user: AuthPayload,
+  ) {
     return this.intermediaryService.getAccessCerts(id, user.sub);
   }
 
@@ -100,9 +115,14 @@ export class IntermediaryPortalController {
   // --- Mediated RP management ---
 
   @Get(':id/mediated-rps')
-  @ApiOperation({ summary: 'List mediated Relying Parties for this intermediary' })
+  @ApiOperation({
+    summary: 'List mediated Relying Parties for this intermediary',
+  })
   @ApiResponse({ status: 200, description: 'List of mediated RPs' })
-  listMediatedRPs(@Param('id') id: string, @AuthenticatedUser() user: AuthPayload) {
+  listMediatedRPs(
+    @Param('id') id: string,
+    @AuthenticatedUser() user: AuthPayload,
+  ) {
     return this.intermediaryService.listMediatedRPs(id, user.sub);
   }
 
@@ -146,7 +166,10 @@ export class IntermediaryPortalController {
 
   @Get(':id/mediated-rps/:rpId/registration-certs')
   @ApiOperation({ summary: 'List registration certificates for a mediated RP' })
-  @ApiResponse({ status: 200, description: 'List of registration certificates' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of registration certificates',
+  })
   getRegistrationCerts(
     @Param('id') id: string,
     @Param('rpId') rpId: string,
@@ -157,7 +180,9 @@ export class IntermediaryPortalController {
 
   @Post(':id/mediated-rps/:rpId/registration-certs')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a registration certificate (WRPRC) for a mediated RP' })
+  @ApiOperation({
+    summary: 'Create a registration certificate (WRPRC) for a mediated RP',
+  })
   @ApiResponse({ status: 201, description: 'Registration certificate created' })
   createRegistrationCert(
     @Param('id') id: string,
@@ -165,11 +190,18 @@ export class IntermediaryPortalController {
     @Body() dto: RegistrationCertificateCreationDto,
     @AuthenticatedUser() user: AuthPayload,
   ) {
-    return this.intermediaryService.createRegistrationCert(id, rpId, dto, user.sub);
+    return this.intermediaryService.createRegistrationCert(
+      id,
+      rpId,
+      dto,
+      user.sub,
+    );
   }
 
   @Delete(':id/mediated-rps/:rpId/registration-certs/:certId')
-  @ApiOperation({ summary: 'Revoke a registration certificate for a mediated RP' })
+  @ApiOperation({
+    summary: 'Revoke a registration certificate for a mediated RP',
+  })
   @ApiResponse({ status: 200, description: 'Certificate revoked' })
   revokeRegistrationCert(
     @Param('id') id: string,
@@ -177,6 +209,11 @@ export class IntermediaryPortalController {
     @Param('certId') certId: string,
     @AuthenticatedUser() user: AuthPayload,
   ) {
-    return this.intermediaryService.revokeRegistrationCert(id, rpId, certId, user.sub);
+    return this.intermediaryService.revokeRegistrationCert(
+      id,
+      rpId,
+      certId,
+      user.sub,
+    );
   }
 }

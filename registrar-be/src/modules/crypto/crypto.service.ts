@@ -100,7 +100,11 @@ export class CryptoService implements OnModuleInit {
   ): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
     return new SignJWT({ status_list: statusList, ttl: ttlSec })
-      .setProtectedHeader({ typ: 'statuslist+jwt', alg: 'ES256', x5c: this.x5c })
+      .setProtectedHeader({
+        typ: 'statuslist+jwt',
+        alg: 'ES256',
+        x5c: this.x5c,
+      })
       .setIssuer(this.issuer)
       .setSubject(sub)
       .setIssuedAt(now)

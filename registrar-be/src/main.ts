@@ -32,10 +32,16 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .addBearerAuth()
-    .addTag('1. Public Registry', 'Open endpoints for browsing the WRP registry')
+    .addTag(
+      '1. Public Registry',
+      'Open endpoints for browsing the WRP registry',
+    )
     .addTag('2. WRP Portal', 'WRP self-management via portal UI')
     .addTag('3. Intermediary Portal', 'Intermediary management via portal UI')
-    .addTag('4. Intermediary Integration', 'Programmatic API for intermediary systems')
+    .addTag(
+      '4. Intermediary Integration',
+      'Programmatic API for intermediary systems',
+    )
     .addTag('Auth', 'Authentication')
     .build();
 

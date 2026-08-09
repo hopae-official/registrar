@@ -1,5 +1,10 @@
 import { Controller, Get, Param, Query, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiProduces } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiProduces,
+} from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { RelyingPartyService } from '../relying_party.service';
 import { AccessCertService } from '../../access_cert/access_cert.service';
@@ -23,10 +28,18 @@ export class PublicRegistryController {
   @Get('wrp')
   @ApiOperation({ summary: 'Search/list registered Wallet-Relying Parties' })
   @ApiProduces('application/jwt')
-  @ApiResponse({ status: 200, description: 'JWS-signed paginated list of matching WRPs' })
-  async findAll(@Query() query: SearchRelyingPartyQueryDto, @Res() res: FastifyReply) {
+  @ApiResponse({
+    status: 200,
+    description: 'JWS-signed paginated list of matching WRPs',
+  })
+  async findAll(
+    @Query() query: SearchRelyingPartyQueryDto,
+    @Res() res: FastifyReply,
+  ) {
     const data = await this.rpService.findAll(query);
-    const jws = await this.cryptoService.signJWT(data, { typ: 'wrp-registry+jwt' });
+    const jws = await this.cryptoService.signJWT(data, {
+      typ: 'wrp-registry+jwt',
+    });
     res.type('application/jwt').send(jws);
   }
 
@@ -34,9 +47,15 @@ export class PublicRegistryController {
   @ApiOperation({ summary: 'Check intended use for a Wallet-Relying Party' })
   @ApiProduces('application/jwt')
   @ApiResponse({ status: 200, description: 'JWS-signed intended use result' })
-  async checkIntendedUse(@Query() query: CheckIntendedUseQueryDto, @Res() res: FastifyReply) {
+  async checkIntendedUse(
+    @Query() query: CheckIntendedUseQueryDto,
+    @Res() res: FastifyReply,
+  ) {
     const result = await this.rpService.checkIntendedUse(query);
-    const jws = await this.cryptoService.signJWT({ ...result }, { typ: 'wrp-registry+jwt' });
+    const jws = await this.cryptoService.signJWT(
+      { ...result },
+      { typ: 'wrp-registry+jwt' },
+    );
     res.type('application/jwt').send(jws);
   }
 
@@ -49,7 +68,10 @@ export class PublicRegistryController {
     @Query('intermediary') intermediaryIdentifier: string,
     @Res() res: FastifyReply,
   ) {
-    const verified = await this.rpService.verifyIntermediaryRelationship(rpIdentifier, intermediaryIdentifier);
+    const verified = await this.rpService.verifyIntermediaryRelationship(
+      rpIdentifier,
+      intermediaryIdentifier,
+    );
     const jws = await this.cryptoService.signJWT(
       { rp: rpIdentifier, intermediary: intermediaryIdentifier, verified },
       { typ: 'wrp-registry+jwt' },
@@ -64,7 +86,9 @@ export class PublicRegistryController {
   @ApiResponse({ status: 404, description: 'Not found' })
   async findOne(@Param('id') id: string, @Res() res: FastifyReply) {
     const data = await this.rpService.findOne(id);
-    const jws = await this.cryptoService.signJWT(data, { typ: 'wrp-registry+jwt' });
+    const jws = await this.cryptoService.signJWT(data, {
+      typ: 'wrp-registry+jwt',
+    });
     res.type('application/jwt').send(jws);
   }
 
@@ -89,7 +113,10 @@ export class PublicRegistryController {
 
   @Get('wrp/:rpId/registration-certs')
   @ApiOperation({ summary: 'List registration certificates for a WRP' })
-  @ApiResponse({ status: 200, description: 'List of registration certificates' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of registration certificates',
+  })
   getRegistrationCerts(@Param('rpId') rpId: string) {
     return this.regCertService.getAll(rpId);
   }
@@ -98,7 +125,10 @@ export class PublicRegistryController {
   @ApiOperation({ summary: 'Get a specific registration certificate' })
   @ApiResponse({ status: 200, description: 'Registration certificate data' })
   @ApiResponse({ status: 404, description: 'Not found' })
-  getRegistrationCert(@Param('rpId') rpId: string, @Param('certId') certId: string) {
+  getRegistrationCert(
+    @Param('rpId') rpId: string,
+    @Param('certId') certId: string,
+  ) {
     return this.regCertService.findOne(rpId, certId);
   }
 }

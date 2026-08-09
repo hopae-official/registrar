@@ -1,5 +1,10 @@
 import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiProduces, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiProduces,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { StatusListService } from './status-list.service';
 import { STATUS_LIST_ID } from './status-list.codec';

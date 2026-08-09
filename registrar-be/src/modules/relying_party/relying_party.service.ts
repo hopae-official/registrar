@@ -342,7 +342,9 @@ export class RelyingPartyService {
     if (!values.length) return;
     for (const rp of await this.all()) {
       if (rp.id === excludeId) continue;
-      const clash = (rp.identifier ?? []).find((i) => values.includes(i.identifier));
+      const clash = (rp.identifier ?? []).find((i) =>
+        values.includes(i.identifier),
+      );
       if (clash) {
         throw new ConflictException(
           `identifier '${clash.identifier}' is already registered to another relying party`,
@@ -460,7 +462,9 @@ export class RelyingPartyService {
           !rp.isIntermediary &&
           rp.usesIntermediary?.some((ref) =>
             ref.identifier.some((refId) =>
-              intermediary.identifier.some((iid) => iid.identifier === refId.identifier),
+              intermediary.identifier.some(
+                (iid) => iid.identifier === refId.identifier,
+              ),
             ),
           ),
       )
