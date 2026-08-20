@@ -15,6 +15,7 @@ import {
   KeyObject,
   randomBytes,
   createPrivateKey,
+  X509Certificate,
 } from 'node:crypto';
 import { Mutex } from 'async-mutex';
 
@@ -60,6 +61,7 @@ export class OpenSSLService implements OnModuleInit {
   private cachedPrivateKey: KeyObject | null = null;
   private cachedSignerCert: string | null = null;
   private cachedSignerKey: KeyObject | null = null;
+  private bootstrapped = false;
 
   constructor(private configService: ConfigService) {
     this.folder = this.configService.get<string>(
@@ -88,14 +90,35 @@ export class OpenSSLService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.initialize();
+    await this.bootstrap();
   }
 
-  private async initialize(): Promise<void> {
-    this.ensureFolderExists();
-    this.createOpenSSLConfig();
-    await this.loadCaFromEnv();
-    this.loadSignerFromEnv();
+  /**
+   * The whole PKI boot sequence for {@link folder}, in one mutex acquisition. Nest starts every provider's
+   * `onModuleInit` concurrently (`await Promise.all(...)` in `callModuleInitHook`), so splitting this across
+   * two hooks raced: `ensureSignerCert()` minted a fresh keypair while `loadSignerFromEnv()` overwrote the
+   * key from the environment in between, leaving `signer.crt` and `signer.key` from *different* keypairs.
+   * Every JWS then carried an `x5c` that could not verify its own signature — which a wallet reads as an
+   * unverifiable, i.e. revoked, registration certificate. Order matters: the CA must exist before the signer
+   * leaf can be issued, and the environment always wins over minting.
+   */
+  async bootstrap(): Promise<void> {
+    return this.mutex.runExclusive(async () => {
+      if (this.bootstrapped) return;
+      this.ensureFolderExists();
+      this.createOpenSSLConfig();
+      await this.loadCaFromEnv();
+      await this.generateCaInternal();
+      this.loadSignerFromEnv();
+      await this.ensureSignerCertInternal();
+      this.assertSignerPairMatches();
+      // The CRL distribution point baked into every issued certificate has to resolve on the env-CA path
+      // too, where CA generation (which used to seed the CRL) is skipped.
+      if (!existsSync(this.crlFile)) {
+        await this.createCrlInternal();
+      }
+      this.bootstrapped = true;
+    });
   }
 
   /**
@@ -177,31 +200,50 @@ export class OpenSSLService implements OnModuleInit {
    * this leaf — never with the root CA key — and carries `x5c=[signer]` (the wallet resolves the CA from its
    * trust list). The CA still issues WRPACs directly. Must be called AFTER the CA exists.
    */
-  async ensureSignerCert(): Promise<void> {
-    return this.mutex.runExclusive(async () => {
-      if (existsSync(this.signerKeyPath) && existsSync(this.signerCertPath))
-        return;
-      const csrPath = join(this.folder, 'signer.csr');
-      const extPath = join(this.folder, 'signer.ext');
-      writeFileSync(
-        extPath,
-        'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n',
-      );
-      await execAsync(
-        `openssl ecparam -genkey -name prime256v1 -noout -out ${this.signerKeyPath}`,
-      );
-      await execAsync(
-        `openssl req -new -key ${this.signerKeyPath} -out ${csrPath} -subj "/C=LU/O=Hopae S.A./CN=Hopae S.A. Registrar Signer"`,
-      );
-      await execAsync(
-        `openssl x509 -req -in ${csrPath} -CA ${this.certPath} -CAkey ${this.privateKeyPath} -CAcreateserial -days 365 -extfile ${extPath} -out ${this.signerCertPath}`,
-      );
-      this.cachedSignerCert = null;
-      this.cachedSignerKey = null;
-      this.logger.log(
-        'Registrar JWS signer cert generated (leaf issued by the CA)',
-      );
+  private async ensureSignerCertInternal(): Promise<void> {
+    if (existsSync(this.signerKeyPath) && existsSync(this.signerCertPath))
+      return;
+    const csrPath = join(this.folder, 'signer.csr');
+    const extPath = join(this.folder, 'signer.ext');
+    writeFileSync(
+      extPath,
+      'basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n',
+    );
+    await execAsync(
+      `openssl ecparam -genkey -name prime256v1 -noout -out ${this.signerKeyPath}`,
+    );
+    await execAsync(
+      `openssl req -new -key ${this.signerKeyPath} -out ${csrPath} -subj "/C=LU/O=Hopae S.A./CN=Hopae S.A. Registrar Signer"`,
+    );
+    await execAsync(
+      `openssl x509 -req -in ${csrPath} -CA ${this.certPath} -CAkey ${this.privateKeyPath} -CAcreateserial -days 365 -extfile ${extPath} -out ${this.signerCertPath}`,
+    );
+    this.cachedSignerCert = null;
+    this.cachedSignerKey = null;
+    this.logger.log(
+      'Registrar JWS signer cert generated (leaf issued by the CA)',
+    );
+  }
+
+  /**
+   * Refuse to serve with a `signer.crt` / `signer.key` that are not the same keypair — the failure is
+   * otherwise silent: tokens sign fine and only the verifier, off in a wallet, sees a broken signature.
+   */
+  private assertSignerPairMatches(): void {
+    const fromCert = new X509Certificate(this.signerCert).publicKey.export({
+      type: 'spki',
+      format: 'der',
     });
+    const fromKey = createPublicKey(this.signerPrivateKey()).export({
+      type: 'spki',
+      format: 'der',
+    });
+    if (!fromCert.equals(fromKey)) {
+      throw new Error(
+        'Registrar JWS signer certificate and private key are different keypairs — refusing to start ' +
+          '(every signed token would carry an x5c that cannot verify it)',
+      );
+    }
   }
 
   get signerCert(): string {
@@ -220,33 +262,29 @@ export class OpenSSLService implements OnModuleInit {
     return this.cachedSignerKey;
   }
 
-  async generateKeysAndCert(subject = '/C=LU/CN=Registrar'): Promise<void> {
-    return this.mutex.runExclusive(async () => {
-      if (existsSync(this.privateKeyPath) && existsSync(this.certPath)) {
-        this.logger.debug('CA keys already exist, skipping generation');
-        return;
-      }
+  private async generateCaInternal(
+    subject = '/C=LU/CN=Registrar',
+  ): Promise<void> {
+    if (existsSync(this.privateKeyPath) && existsSync(this.certPath)) {
+      this.logger.debug('CA keys already exist, skipping generation');
+      return;
+    }
 
-      this.logger.log('Generating CA keys and certificate...');
+    this.logger.log('Generating CA keys and certificate...');
 
-      await execAsync(
-        `openssl ecparam -genkey -name prime256v1 -noout -out ${this.privateKeyPath}`,
-      );
-      await execAsync(
-        `openssl req -new -x509 -key ${this.privateKeyPath} -out ${this.certPath} -days 730 -subj "${subject}" -config ${this.openSSLConfigPath} -extensions v3_ca`,
-      );
-      await execAsync(
-        `openssl x509 -in ${this.certPath} -outform der -out ${this.certPath}.der`,
-      );
+    await execAsync(
+      `openssl ecparam -genkey -name prime256v1 -noout -out ${this.privateKeyPath}`,
+    );
+    await execAsync(
+      `openssl req -new -x509 -key ${this.privateKeyPath} -out ${this.certPath} -days 730 -subj "${subject}" -config ${this.openSSLConfigPath} -extensions v3_ca`,
+    );
+    await execAsync(
+      `openssl x509 -in ${this.certPath} -outform der -out ${this.certPath}.der`,
+    );
 
-      this.cachedCert = null;
-      this.cachedPrivateKey = null;
-      this.logger.log('CA keys and certificate generated');
-
-      if (!existsSync(this.crlFile)) {
-        await this.createCrlInternal();
-      }
-    });
+    this.cachedCert = null;
+    this.cachedPrivateKey = null;
+    this.logger.log('CA keys and certificate generated');
   }
 
   async createCert(

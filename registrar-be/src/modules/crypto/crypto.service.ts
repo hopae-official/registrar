@@ -8,9 +8,7 @@ import type { StatusList } from '../status_list/status-list.codec';
 
 @Injectable()
 export class CryptoService implements OnModuleInit {
-  x5c: string[];
   issuer: string;
-  private initialized = false;
 
   constructor(
     public openssl: OpenSSLService,
@@ -23,17 +21,17 @@ export class CryptoService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.initialize();
+    await this.openssl.bootstrap();
   }
 
-  private async initialize(): Promise<void> {
-    if (this.initialized) return;
-    await this.openssl.generateKeysAndCert();
-    await this.openssl.ensureSignerCert();
-    // JWS tokens are signed with the dedicated signer leaf; x5c carries only the leaf (the CA is the wallet's
-    // trust anchor, resolved from its trust list — RFC 7515 excludes the anchor).
-    this.x5c = this.generateX5c(this.openssl.signerCert);
-    this.initialized = true;
+  /**
+   * The `x5c` for every JWS we sign. Tokens are signed with the dedicated signer leaf, and x5c carries only
+   * that leaf (the CA is the wallet's trust anchor, resolved from its trust list — RFC 7515 excludes the
+   * anchor). Derived per call from the same file `signerPrivateKey()` is paired with, so the published
+   * certificate can never drift from the key that actually produced the signature.
+   */
+  private get x5c(): string[] {
+    return this.generateX5c(this.openssl.signerCert);
   }
 
   private generateX5c(certPem: string): string[] {
